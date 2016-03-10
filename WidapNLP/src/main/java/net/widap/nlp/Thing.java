@@ -163,13 +163,26 @@ public class Thing
 		}
 		
 		return false;
+		
+		//return ((Prop.Variety)getProp(Prop.Variety)).isConcrete();
+	}
+	
+	public boolean hasProp(Prop other)
+	{
+		for (Prop prop : props)
+		{
+			if (prop.equals(other))
+				return true;
+		}
+		
+		return false;
 	}
 	
 	public Prop getProp(Class propClass)
 	{
 		for (Prop prop : props)
 		{
-			if (prop.getClass().equals(propClass))
+			if (propClass.isInstance(prop))
 			{
 				return prop;
 			}
@@ -184,7 +197,7 @@ public class Thing
 		
 		for (Prop prop : props)
 		{
-			if (prop.getClass().equals(propClass))
+			if (propClass.isInstance(prop))
 			{
 				props.add(prop);
 			}
@@ -211,6 +224,18 @@ public class Thing
 			if (!repeat)
 				props.add(prop);
 		}
+	}
+	
+	//returns if the properties of the other thing are a subset of this thing's properties
+	public boolean contains(Thing other)
+	{
+		for (Prop otherProp : other.props)
+		{
+			if (!hasProp(otherProp))
+				return false;
+		}
+		
+		return true;
 	}
 	
 	public String toString()

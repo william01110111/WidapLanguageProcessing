@@ -16,6 +16,11 @@ public abstract class Prop
 		return "[no value]";
 	}
 	
+	public boolean equals(Prop other)
+	{
+		return getClass().equals(other.getClass()) && id().equals(other.id()) && str().equals(other.str());
+	}
+	
 	//a general attribute that doesn't fit into any specific type of property, or for an unknown property type
 	static class Attrib extends Prop
 	{
@@ -60,6 +65,7 @@ public abstract class Prop
 		String id() {return "variety";}
 		String str() {return val.name();}
 		VarietyEnum variety() {return val;}
+		public boolean equals(Variety v) {return val.equals(v.val);}
 		
 		//get boolean info about this things variety
 		boolean isNoun() {return val==VarietyEnum.GENERAL || val==VarietyEnum.SPECIF;}
