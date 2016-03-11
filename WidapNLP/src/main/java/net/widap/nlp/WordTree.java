@@ -46,27 +46,12 @@ public class WordTree
 				WidapMind.errorMsg("called WordTree.addVariant() on a lower level of the tree");
 		}
 		
-		Word word=getWord(variant.txt);
-		
-		boolean addVariant;
+		Word word=getWord(variant.txt, false);
 		
 		if (word==null)
-		{
 			word=new Word();
-			word.add(variant);
-			addVariant=true;
-		}
-		else
-		{
-			addVariant=word.add(variant);
-		}
 		
-		if (addVariant)
-		{
-			VariantHolder holder=new VariantHolder();
-			holder.variant=variant;
-			addHolder(holder);
-		}
+		addVariant(variant, word);
 	}
 	
 	//adds the variant to the word that contains a variant with the same string as match
@@ -79,8 +64,8 @@ public class WordTree
 				WidapMind.errorMsg("called WordTree.addVariant() on a lower level of the tree");
 		}
 		
-		Word matchWord=getWord(match);
-		Word word=getWord(variant.txt);
+		Word matchWord=getWord(match, false);
+		Word word=getWord(variant.txt, false);
 		
 		
 		if (matchWord==null)
@@ -97,14 +82,22 @@ public class WordTree
 			mergeWords(matchWord, word);
 		}
 		
-		if (matchWord.add(variant))
+		addVariant(variant, matchWord);
+		
+		return true;
+	}
+	
+	public boolean addVariant(Word.Variant variant, Word word)
+	{
+		if (word.add(variant)) //if the variant was added successfully (it was not a duplicate)
 		{
 			VariantHolder holder=new VariantHolder();
 			holder.variant=variant;
 			addHolder(holder);
+			return true;
 		}
-		
-		return true;
+		else
+			return false;
 	}
 	
 	private void addHolder(VariantHolder holder)
@@ -194,12 +187,11 @@ public class WordTree
 	//returns the word that contains a variant of the input, or null if no such word exists
 	//relies on getVariant()
 	//assumes that there is only one word with variants that have any one string
-	public Word getWord(String input)
+	public Word getWord(String input, boolean addPossible)
 	{
-		//getVariant() does this for us
-		//input=convertToLetters(input);
+		input=convertToLetters(input);
 		
-		ArrayList<Word.Variant> variants=getVariants(input);
+		ArrayList<Word.Variant> variants=getVariants(input, addPossible);
 		
 		//getVariantInternal(input, variants);
 		
@@ -213,27 +205,37 @@ public class WordTree
 	//has several things to try, and always returns something, even if its just the original word
 	public String switchPOS(String input, Word.POS pos)
 	{
-		Word word=getWord(input);
+		Word word=getWord(input, true);
 		ArrayList<Word.Variant> list;
 		
 		//first we check if the dictionary has the variant we want. If it has multiple, we just return the first one
 		if (word!=null && (list=word.getVariants(pos)).size()>0)
 			return list.get(0).txt;
+		
+		
+		else if (Word.posMatches(Word.POS.NOUN_PL, pos))
+		{
+			String out=makePlural(switchPOS(input, Word.POS.NOUN));
+			return out==null?input:out;
+		}
+		
+		else if (Word.posMatches(Word.POS.NOUN, pos))
+		{
+			String out=makeSingular(input);
+			return out==null?input:out;
+		}
+		else if (Word.posMatches(Word.POS.VB, pos))
+		{
+			String out;
+			out=makeVbNotPresent(input);
+			if (out==null)
+				out=makeVbNotPast(input);
 			
-			//assume we are dealing with an input noun singular
-		else if (pos==Word.POS.NOUN_PL)
-		{
-			return makePlural(input);
+			return out==null?input:out;
 		}
-		
-		else if (pos==Word.POS.NOUN)
+		else if (Word.posMatches(Word.POS.VB_PR, pos))
 		{
-			return makeSingular(input);
-		}
-		
-		else if (pos==Word.POS.VB_PR)
-		{
-			return input+"ing";
+			return switchPOS(input, Word.POS.VB)+"ing";
 		}
 		
 		//if all else fails, return the word back unchanged
@@ -241,14 +243,9 @@ public class WordTree
 			return input;
 	}
 	
-	public String makePlural(String input)
+	private static String makePlural(String input)
 	{
-		ArrayList<Word.Variant> variants=getVariants(input, Word.POS.NOUN_PL);
-		
-		if (variants.size()>0)
-			return variants.get(0).txt;
-		
-		else if (input.endsWith("y"))
+		if (input.endsWith("y"))
 			return input.substring(0, input.length()-1)+"ies";
 		
 		else if (input.endsWith("s"))
@@ -258,13 +255,8 @@ public class WordTree
 			return input+"s";
 	}
 	
-	public String makeSingular(String input)
+	private static String makeSingular(String input)
 	{
-		ArrayList<Word.Variant> variants=getVariants(input, Word.POS.NOUN);
-		
-		if (variants.size()>0)
-			return variants.get(0).txt;
-		
 		if (input.endsWith("ies") && input.length()>3)
 			return input.substring(0, input.length()-3)+"y";
 		
@@ -275,12 +267,41 @@ public class WordTree
 			return input.substring(0, input.length()-1);
 		
 		else
-			return input;
+			return null;
+	}
+	
+	//switches eating to eat without using the dictionary
+	private static String makeVbNotPresent(String in)
+	{
+		if (in.length()>3 && in.endsWith("ing"))
+		{
+			in=in.substring(0, in.length()-3);
+			
+			if (in.length()>=2 && in.charAt(in.length()-1)==in.charAt(in.length()-2)) //deal with double letters at the end (ex. running
+				in=in.substring(0, in.length()-1);
+			
+			return in;
+		}
+		else
+			return null;
+	}
+	
+	//switches eating to eat without using the dictionary
+	private static String makeVbNotPast(String in)
+	{
+		if (in.length()>2 && in.endsWith("en"))
+		{
+			in=in.substring(0, in.length()-2);
+			
+			return in;
+		}
+		else
+			return null;
 	}
 	
 	//returns the variants of the input word with a specific part of speech
 	//if it cant find the input word, or the correct variant within, it will return null
-	public ArrayList<Word.Variant> getVariants(String input, Word.POS pos)
+	/*public ArrayList<Word.Variant> getVariants(String input, Word.POS pos)
 	{
 		Word word=getWord(input);
 		
@@ -288,20 +309,69 @@ public class WordTree
 			return new ArrayList<>();
 		else
 			return word.getVariants(pos);
-	}
+	}*/
 	
 	//an easier to use wrapper for getVariantInternal()
 	//does things that should only be done once, not once for every layer of the tree
-	public ArrayList<Word.Variant> getVariants(String inptWord)
+	//addPossible is if to add and return variants that may be alternate parts of speech of known variants
+	public ArrayList<Word.Variant> getVariants(String in, boolean addPossible)
 	{
-		inptWord=convertToLetters(inptWord);
+		in=convertToLetters(in);
 		ArrayList<Word.Variant> list=new ArrayList<>();
-		getVariantsInternal(inptWord, list);
-		return list;
+		getVariantsInternal(in, list);
+		
+		if (list.size()>0 || !addPossible)
+			return list;
+		else
+		{
+			addPosibleVariants(in);
+			getVariantsInternal(in, list);
+			return list;
+		}
+		
+	}
+	
+	public void addPosibleVariants(String in)
+	{
+		String match;
+		ArrayList<Word.Variant> list=new ArrayList<>();
+		
+		if ((match=makeSingular(in))!=null)
+		{
+			getVariantsInternal(match, list);
+			
+			if (list.size()>0)
+			{
+				addVariant(in, Word.POS.NOUN_PL, match);
+				list.clear();
+			}
+		}
+			
+		if ((match=makeVbNotPresent(in))!=null)
+		{
+			getVariantsInternal(match, list);
+			
+			if (list.size()>0)
+			{
+				addVariant(in, Word.POS.VB_PR, match);
+				list.clear();
+			}
+		}
+		
+		if ((match=makeVbNotPast(in))!=null)
+		{
+			getVariantsInternal(match, list);
+			
+			if (list.size()>0)
+			{
+				addVariant(in, Word.POS.VB_PR, match);
+				list.clear();
+			}
+		}
 	}
 	
 	//compiles a list of variants that exactly match the input string;
-	//input is expected to already have been converted to lower case letters and this list is expected to already be initialized
+	//input is expected to already have been converted to lower case letters only (no spaces) and this list is expected to already be initialized
 	//this function calls itself on the next level of the tree if necessary
 	private void getVariantsInternal(String input, ArrayList<Word.Variant> list)
 	{

@@ -1,7 +1,6 @@
 package net.widap.nlp;
 
 import java.util.ArrayList;
-import java.util.Map;
 
 public class TextParser
 {
@@ -112,16 +111,16 @@ public class TextParser
 		if (out!=null)
 			return out;
 		
-		Idea.Node nodeStrt=str2Ideas(input);
+		IdeaNode nodeStrt=str2Ideas(input);
 		//Idea.Node nodeStrt=new Idea.Node();
 		
 		if (WidapMind.lotsOfChecks)
 			nodeStrt.checkStructure();
 		
-		//if (WidapMind.lotsOfMsgs)
-		//	WidapMind.message("parsing ideas...");
+		if (WidapMind.lotsOfMsgs)
+			WidapMind.message("parsing ideas...");
 		
-		//parseIdeas(nodeStrt);
+		parseIdeas(nodeStrt);
 		
 		if (WidapMind.lotsOfChecks)
 			nodeStrt.checkStructure();
@@ -179,7 +178,7 @@ public class TextParser
 		{
 			Word word;
 			
-			word=mind.dict.getWord(words.get(0));
+			word=mind.dict.getWord(words.get(0), true);
 			
 			if (word==null)
 				output+="I don't know that word.";
@@ -416,14 +415,15 @@ public class TextParser
 		return output;
 	}
 	
-	private void parseIdeas(Idea.Node start)
+	private void parseIdeas(IdeaNode start)
 	{
 		start.splitAll();
+		start.mergeAll();
 	}
 	
-	private Idea.Node str2Ideas(String inStr)
+	private IdeaNode str2Ideas(String inStr)
 	{
-		Idea.Node start=new Idea.Node(), end=start;
+		IdeaNode start=new IdeaNode(new ArrayList<Idea>()), end=start;
 		
 		int i=0;
 		while (i<inStr.length())
