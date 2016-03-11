@@ -11,12 +11,13 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	WidapMind mind;
 	
 	IdeaNode next, prev;
+	boolean hasMerged;
 	
-	String str;
-	Word.Variant variant;
-	boolean plural;
+	public String str;
+	public Word.Variant variant;
+	public boolean plural;
 	//ArrayList<Thing> things;
-	Thing thing;
+	public Thing thing;
 	
 	private Idea(WidapMind m)
 	{
@@ -24,6 +25,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		//	WidapMind.message("made new Idea");
 		
 		mind=m;
+		hasMerged=false;
 		//things=new ArrayList<>();
 		thing=null;
 		variant=null;
@@ -86,18 +88,25 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing inThing, WidapMind m)
 	{
 		this(n0, n1, inStr, m);
-		thing=inThing;
+		thing=inThing.copy();
 	}
 	
 	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing inThing, boolean inPl, WidapMind m)
 	{
-		this(n0, n1, inStr, m);
-		thing=inThing;
+		this(n0, n1, inStr, inThing, m);
 		plural=inPl;
 	}
 	
-	//the following functions are for adding this Idea into a node network and should only be called by the constructors
+	public Idea(IdeaData data, WidapMind m)
+	{
+		this(data.prev, data.next, m);
+		str=data.str;
+		variant=data.variant;
+		plural=data.plural;
+		thing=data.thing; //its ok that it doesn't make a copy, the Thing in IdeaData should be unique
+	}
 	
+	//the following two functions are for adding this Idea into a node network and should only be called by the constructors
 	private void addBetween(IdeaNode n0, IdeaNode n1)
 	{
 		n0.ideas.add(this);
@@ -150,17 +159,108 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			for (Word.Variant v : variants)
 				new Idea(prev, next, str, v, mind).remove(true);
 			
-			ArrayList<Thing> things=mind.getThings(str);
+			ArrayList<Thing> things;
+			
+			String strSin=mind.dict.switchPOS(str, Word.POS.NOUN);
+			
+			things=mind.getThings(str);
 			
 			for (Thing t : things)
 				new Idea(prev, next, str, t, mind).remove(true);
+			
+			if (!str.equals(strSin))
+			{
+				things=mind.getThings(strSin);
+				
+				for (Thing t : things)
+					new Idea(prev, next, str, t, true, mind).remove(true);
+			}
+			
+			boolean hasNoun=false;
+			for (Word.Variant v : variants)
+				if (Word.posMatches(Word.POS.NOUN, v.pos))
+					hasNoun=true;
+			
+			if (hasNoun || variants.size()==0)
+				new Idea(prev, next, str, new Thing(str), mind);
+			
+			boolean hasPlNoun=false;
+			for (Word.Variant v : variants)
+				if (Word.posMatches(Word.POS.NOUN_PL, v.pos))
+					hasPlNoun=true;
+			
+			if (hasPlNoun || variants.size()==0)
+				new Idea(prev, next, str, new Thing(str), true, mind);
 		}
 	}
 	
 	//this is where the magic happens
 	public boolean merge()
 	{
+		if (hasMerged)
+			return false;
+		
+		hasMerged=true;
+		
+		if (thing!=null)
+		{
+			
+		}
+		else if (variant!=null)
+		{
+			if (Word.posMatches(Word.POS.ADJ, variant.pos))
+			{
+				ArrayList<IdeaData> ideas=new ArrayList<>();
+				
+				getThingsFwd(ideas);
+				
+				for (IdeaData data : ideas)
+					new Idea(data, mind);
+			}
+		}
+		else
+		{
+			
+		}
+		
 		return false;
+	}
+	
+	private void getThingsFwd(ArrayList<IdeaData> data)
+	{
+		if (thing!=null)
+		{
+			data.add(new IdeaData(prev, next, str, thing.copy()));
+		}
+		else if (variant!=null)
+		{
+			if (Word.posMatches(Word.POS.ADJ, variant.pos))
+			{
+				int start=data.size();
+				
+				for (Idea idea : next.next)
+				{
+					idea.getThingsFwd(data);
+				}
+				
+				for (int i=start; i<data.size(); i++)
+				{
+					IdeaData elem=data.get(i);
+					
+					elem.str=str+elem.str;
+					elem.prev=prev;
+					
+					if (elem.thing!=null)
+					{
+						elem.thing.addProp(new Prop.Attrib(variant.txt));
+					}
+				}
+			}
+		}
+		else
+		{
+			
+		}
 	}
 	
 	//searches to see id this Idea has a duplicate in the same place in the structure
@@ -178,7 +278,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	//if this idea is equal to another idea (note that to return true, the Things must be the exact same thing, not just matching things)
 	public boolean equals(Idea o)
 	{
-		return variant==o.variant && thing==o.thing && plural==o.plural && str.equals(o.str);
+		return variant==o.variant && ((thing==null && o.thing==null) || (thing!=null && o.thing!=null && thing.equals(o.thing))) && plural==o.plural && str.equals(o.str);
 	}
 	
 	//removes this idea from the structure, it then becomes invalid and trying to use us is a bad idea
@@ -224,5 +324,52 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		}
 		
 		return out;
+	}
+	
+	//holds most ofd the data of an idea, and you can construct an idea from it but it does not have the same methods or live in a data structure
+	private static class IdeaData
+	{
+		IdeaNode next, prev; //note that IdeaData can not be part of the data structure, this is just information on how to place an Idea made from it
+		public String str;
+		public Word.Variant variant;
+		public boolean plural;
+		//ArrayList<Thing> things;
+		public Thing thing;
+		
+		IdeaData()
+		{
+			next=null;
+			prev=null;
+			str=null;
+			variant=null;
+			plural=false;
+			thing=null;
+		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn)
+		{
+			this();
+			next=nextIn;
+			prev=prevIn;
+			str=strIn;
+		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Word.Variant variantIn)
+		{
+			this();
+			next=nextIn;
+			prev=prevIn;
+			str=strIn;
+			variant=variantIn;
+		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn)
+		{
+			this();
+			next=nextIn;
+			prev=prevIn;
+			str=strIn;
+			thing=thingIn;
+		}
 	}
 }

@@ -117,9 +117,6 @@ public class TextParser
 		if (WidapMind.lotsOfChecks)
 			nodeStrt.checkStructure();
 		
-		if (WidapMind.lotsOfMsgs)
-			WidapMind.message("parsing ideas...");
-		
 		parseIdeas(nodeStrt);
 		
 		if (WidapMind.lotsOfChecks)

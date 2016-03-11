@@ -32,6 +32,12 @@ public abstract class Prop
 			strStr=str;
 		}
 		
+		Attrib(String str)
+		{
+			idStr="Attrib";
+			strStr=str;
+		}
+		
 		String id() {return idStr;}
 		
 		String str() {return strStr;}

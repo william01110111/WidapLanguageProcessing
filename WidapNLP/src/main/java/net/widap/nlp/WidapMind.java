@@ -13,7 +13,6 @@ public class WidapMind {
     static final int maxErrorNum=240;
     static final boolean lotsOfChecks=true; //if to run checks on many of the internal data structures
         //turning off may speed things up considerably, and it won't cause any new errors, just fail the catch any that may arise
-	static final boolean lotsOfMsgs=true; //if to display a lot of messages
 
 	private boolean quit=false;
 	public void setQuit(Boolean q) {quit=q;}

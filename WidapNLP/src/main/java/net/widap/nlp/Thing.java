@@ -238,10 +238,15 @@ public class Thing
 		return true;
 	}
 	
+	public boolean equals(Thing other)
+	{
+		return other.props.size()==props.size() && contains(other);
+	}
+	
 	public String toString()
 	{
 		Prop prop;
-		String out="(";
+		String out="{";
 		
 		for (int i=0; i<props.size(); i++)
 		{
@@ -249,7 +254,7 @@ public class Thing
 			out+=prop.id()+": "+prop.str()+(i==props.size()-1?"":", ");
 		}
 		
-		out+=")";
+		out+="}";
 		
 		return out;
 	}
