@@ -11,7 +11,9 @@ public class WidapMind {
 	Random rand;
     static int errorNum=0;
     static final int maxErrorNum=240;
-    static final boolean lotsOfChecks=true;
+    static final boolean lotsOfChecks=true; //if to run checks on many of the internal data structures
+        //turning off may speed things up considerably, and it won't cause any new errors, just fail the catch any that may arise
+	static final boolean lotsOfMsgs=true; //if to display a lot of messages
 
 	private boolean quit=false;
 	public void setQuit(Boolean q) {quit=q;}
@@ -98,7 +100,9 @@ public class WidapMind {
     {
         if (errorNum<maxErrorNum)
         {
-            System.out.println("WidapMind error: " + msg);
+	        StackTraceElement[] ste = Thread.currentThread().getStackTrace();
+	        
+            System.out.println("WidapMind error in "+ste[2].getClassName()+"."+ste[2].getMethodName()+"(): "+msg);
 
             if (errorNum>=0)
                 ++errorNum;

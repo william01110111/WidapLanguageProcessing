@@ -65,7 +65,7 @@ public abstract class Prop
 		String id() {return "variety";}
 		String str() {return val.name();}
 		VarietyEnum variety() {return val;}
-		public boolean equals(Variety v) {return val.equals(v.val);}
+		public boolean equals(Prop other) {return other.getClass().equals(Variety.class) && val.equals(((Variety)other).val);}
 		
 		//get boolean info about this things variety
 		boolean isNoun() {return val==VarietyEnum.GENERAL || val==VarietyEnum.SPECIF;}

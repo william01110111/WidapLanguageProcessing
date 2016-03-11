@@ -62,10 +62,17 @@ public class TextParser
 	{
 		String out="";
 		ArrayList<String> sects=splitIntoSections(in);
-		for (String str : sects)
+		for (int i=0; i<sects.size(); i++)
 		{
-			out+=parseSection(str)+" ";
+			String str=sects.get(i);
+			out+=parseSection(str);
+			if (i<sects.size()-1)
+				out+=" ";
 		}
+		
+		if (!out.endsWith("\n"))
+			out+="\n";
+		
 		return out;
 	}
 	
@@ -105,13 +112,16 @@ public class TextParser
 		if (out!=null)
 			return out;
 		
-		//Idea.Idea.Node nodeStrt=str2Ideas(input);
-		Idea.Node nodeStrt=new Idea.Node();
+		Idea.Node nodeStrt=str2Ideas(input);
+		//Idea.Node nodeStrt=new Idea.Node();
 		
 		if (WidapMind.lotsOfChecks)
 			nodeStrt.checkStructure();
 		
-		parseIdeas(nodeStrt);
+		//if (WidapMind.lotsOfMsgs)
+		//	WidapMind.message("parsing ideas...");
+		
+		//parseIdeas(nodeStrt);
 		
 		if (WidapMind.lotsOfChecks)
 			nodeStrt.checkStructure();
@@ -175,14 +185,12 @@ public class TextParser
 				output+="I don't know that word.";
 			else
 			{
-				output+="\nI know the word '"+words.get(0)+"':";
+				output+="I know the word '"+words.get(0)+"':\n\n";
 				
 				for (int i=0; i<word.variants.size(); i++)
 				{
-					output+="\n"+word.variants.get(i).txt+" ("+word.variants.get(i).pos.name()+")";
+					output+=word.variants.get(i)+"\n";
 				}
-				
-				output+="\n";
 			}
 		}
 		/*else if (chkPtrn(input, "[w] are [w]", words))

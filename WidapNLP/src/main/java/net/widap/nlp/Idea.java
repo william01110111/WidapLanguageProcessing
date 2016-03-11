@@ -20,6 +20,9 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	
 	public Idea(WidapMind m)
 	{
+		//if (WidapMind.lotsOfMsgs)
+		//	WidapMind.message("made new Idea");
+		
 		mind=m;
 		//things=new ArrayList<>();
 		thing=null;
@@ -47,20 +50,20 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		}
 		else if (n0==null)
 		{
-			splitNAdd(n1.getStart());
+			addBetween(n1.getStart(), false);
 		}
 		else if (n1==null)
 		{
 			//if there is only one node in the structure so far, make sure it stays at the start, otherwise, push the last node forward to keep it at the end
 			Node end=n0.getEnd();
 			if (end==n0.getStart())
-				splitNAdd(end);
+				addBetween(end, false);
 			else
-				splitNAddEnd(end);
+				addBetween(end, true);
 		}
 		else if (n0==n1)
 		{
-			splitNAdd(n0);
+			addBetween(n0, false);
 		}
 		else
 		{
@@ -74,6 +77,25 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		str=inStr;
 	}
 	
+	public Idea(Node n0, Node n1, String inStr, Word.Variant inVar, WidapMind m)
+	{
+		this(n0, n1, inStr, m);
+		variant=inVar;
+	}
+	
+	public Idea(Node n0, Node n1, String inStr, Thing inThing, WidapMind m)
+	{
+		this(n0, n1, inStr, m);
+		thing=inThing;
+	}
+	
+	public Idea(Node n0, Node n1, String inStr, Thing inThing, boolean inPl, WidapMind m)
+	{
+		this(n0, n1, inStr, m);
+		thing=inThing;
+		plural=inPl;
+	}
+	
 	//the following functions are for adding this Idea into a node network and should only be called by the constructors
 	
 	private void addBetween(Node n0, Node n1)
@@ -85,65 +107,85 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	}
 	
 	//splits the node into 2 nodes and adds this idea in between them (also used for adding at beginning and end)
-	//original node always becomes the first of the two
-	private void splitNAdd(Node n0)
+	//if oldIsEnd, original node becomes the latter of the two, otherwise it goes first
+	private void addBetween(Node n, boolean oldIsEnd)
 	{
-		Node n1=new Node();
-		
-		for (Idea idea : n0.next)
+		if (oldIsEnd)
 		{
-			n1.next.add(idea);
+			Node n0=new Node();
+			
+			for (Idea idea : n.prev)
+			{
+				n0.prev.add(idea);
+				idea.next=n0;
+			}
+			
+			n0.prev.clear();
+			
+			addBetween(n0, n);
 		}
-		
-		n0.next.clear();
-		
-		addBetween(n0, n1);
+		else
+		{
+			Node n0=new Node();
+			
+			for (Idea idea : n.next)
+			{
+				n0.next.add(idea);
+				idea.prev=n0;
+			}
+			
+			n.next.clear();
+			
+			addBetween(n, n0);
+		}
 	}
 	
-	//like splitNAdd, but original becomes the end
-	private void splitNAddEnd(Node n1)
-	{
-		Node n0=new Node();
-		
-		for (Idea idea : n1.prev)
-		{
-			n0.prev.add(idea);
-		}
-		
-		n1.prev.clear();
-		
-		addBetween(n0, n1);
-	}
-	
-	//splits the entire structure into 
 	public void split()
 	{
-		WidapMind.message(toString()+" split.");
-		
 		if (thing==null && variant==null)
 		{
 			ArrayList<Word.Variant> variants=mind.dict.getVariants(str);
 			
 			for (Word.Variant v : variants)
-			{
-				if (v!=variant)
-				{
-					Idea idea=new Idea(prev, next, str, mind);
-					idea.variant=v;
-				}
-			}
+				new Idea(prev, next, str, v, mind).remove(true);
 			
 			ArrayList<Thing> things=mind.getThings(str);
 			
 			for (Thing t : things)
-			{
-				if (t!=thing)
-				{
-					Idea idea=new Idea(prev, next, str, mind);
-					idea.thing=t;
-				}
-			}
+				new Idea(prev, next, str, t, mind).remove(true);
 		}
+	}
+	
+	//searches to see id this Idea has a duplicate in the same place in the structure
+	private boolean isDuplicate()
+	{
+		for (Idea other : prev.next)
+		{
+			if (other!=this && next==other.next && equals(other))
+				return true;
+		}
+		
+		return false;
+	}
+	
+	//if this idea is equal to another idea (note that to return true, the Things must be the exact same thing, not just matching things)
+	public boolean equals(Idea o)
+	{
+		return variant==o.variant && thing==o.thing && plural==o.plural && str.equals(o.str);
+	}
+	
+	//removes this idea from the structure, it then becomes invalid and trying to use us is a bad idea
+	public void remove(boolean onlyIfDupli)
+	{
+		if (onlyIfDupli && !isDuplicate())
+			return;
+		
+		//if (WidapMind.lotsOfMsgs)
+		//	WidapMind.message(toString()+" removed from data structure");
+		prev.next.remove(this);
+		next.prev.remove(this);
+		next=null;
+		prev=null;
 	}
 	
 	public String toString()
@@ -269,7 +311,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			{
 				Idea idea=next.get(i);
 				idea.split();
-				//idea.next.splitAll();
+				idea.next.splitAll();
 			}
 		}
 		
@@ -311,21 +353,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			//below are the thick unicode box drawing characters that can be copied from
 			/*retrieved from http://unicode-table.com/en/blocks/box-drawing/
 			━ ┃ ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋
-			
-			
-			┏┓        ┏━━━━━━━┓        ┏┓
-			┃┃     ┏━━┛       ┗━━┓     ┃┃
-			┃┃    ┏┛   ┏━━━━━┓   ┗┓    ┃┃
-			┃┃    ┃  ┏━┛     ┗━┓  ┃    ┃┃
-			┃┣━━━━┫  ┃         ┃  ┣━━━━┫┃
-			┃┣━━━━┫  ┗━┓     ┏━┛  ┣━━━━┫┃
-			┃┃    ┃    ┗━━━━━┛    ┃    ┃┃
-			┃┃    ┗┓             ┏┛    ┃┃
-			┃┃     ┗━━┓       ┏━━┛     ┃┃
-			┗┛        ┗━━━━━━━┛        ┗┛
-			 */
-			
-			//yes, that was absolutely necessary in order to test the continuity of the symbols in a practical application
+			*/
 			
 			ArrayList<VisualSect> sects=new ArrayList<>();
 			getStart().populateSectList(sects);
@@ -337,8 +365,6 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			ArrayList<String> list1=new ArrayList<>();
 			list1.add("━[END]");
 			sects.add(new VisualSect(getEnd(), new Node(), list1));
-			
-			WidapMind.message("sect list size: "+sects.size());
 			
 			boolean stop;
 			
@@ -567,7 +593,8 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			for (Idea idea : next)
 			{
 				ArrayList<String> lines=new ArrayList<>();
-				lines.add("━["+idea.toString()+"]━");
+				//lines.add("━["+idea.toString()+"]━");
+				lines.add("━"+idea.toString()+"━");
 				sects.add(new VisualSect(this, idea.next, lines));
 				
 				boolean dupli=false;
@@ -604,7 +631,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			{
 				if (node==this)
 				{
-					WidapMind.errorMsg("loop detected in node data structure in text parser. THIS IS VERY BAD!!!");
+					WidapMind.errorMsg("loop detected in node data structure. THIS IS VERY BAD!!!");
 					return end;
 				}
 			}
@@ -615,7 +642,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			{
 				if (idea.next!=this)
 				{
-					WidapMind.errorMsg("idea pointed backward at by node does not point forward to the same node in text parser");
+					WidapMind.errorMsg("idea "+idea+" pointed backward at by node does not point forward to the same node");
 				}
 			}
 			
@@ -623,7 +650,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			{
 				if (idea.prev!=this)
 				{
-					WidapMind.errorMsg("idea pointed to by node does not point back at the same node in text parser");
+					WidapMind.errorMsg("idea "+idea+" pointed to by node does not point back at the same node");
 				}
 				
 				if (idea.next.checkInternal(nodes)!=end)
