@@ -11,10 +11,10 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	WidapMind mind;
 	
 	IdeaNode next, prev;
-	boolean hasMerged;
 	
 	public String str;
 	public Word.Variant variant;
+	public ArrayList<Prop> props;
 	public boolean plural;
 	//ArrayList<Thing> things;
 	public Thing thing;
@@ -25,12 +25,12 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		//	WidapMind.message("made new Idea");
 		
 		mind=m;
-		hasMerged=false;
+		variant=null;
+		props=new ArrayList<>();
+		plural=false;
 		//things=new ArrayList<>();
 		thing=null;
-		variant=null;
-		plural=false;
-		str=null;
+		str="";
 	}
 	
 	//if either is null, the other is only used to find the correct data structure, which node it is doesn't matter
@@ -85,6 +85,18 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		variant=inVar;
 	}
 	
+	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Prop inProp, WidapMind m)
+	{
+		this(n0, n1, inStr, m);
+		props.add(inProp);
+	}
+	
+	public Idea(IdeaNode n0, IdeaNode n1, String inStr, ArrayList<Prop> inProps, WidapMind m)
+	{
+		this(n0, n1, inStr, m);
+		props=inProps;
+	}
+	
 	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing inThing, WidapMind m)
 	{
 		this(n0, n1, inStr, m);
@@ -102,6 +114,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		this(data.prev, data.next, m);
 		str=data.str;
 		variant=data.variant;
+		props=data.props;
 		plural=data.plural;
 		thing=data.thing; //its ok that it doesn't make a copy, the Thing in IdeaData should be unique
 	}
@@ -152,59 +165,72 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	
 	public void split()
 	{
-		if (thing==null && variant==null)
+		if (variant!=null || props.size()!=0 || thing!=null)
+			return;
+		
+		ArrayList<Word.Variant> variants=mind.dict.getVariants(str, true);
+		
+		for (Word.Variant v : variants)
+			new Idea(prev, next, str, v, mind).remove(true);
+		
+		ArrayList<Thing> things;
+		
+		//get the singular version of the word
+		String strSin=mind.dict.switchPOS(str, Word.POS.NOUN);
+		
+		things=mind.getThings(str);
+		
+		for (Thing t : things)
+			new Idea(prev, next, str, t, false, mind).remove(true);
+		
+		if (!str.equals(strSin))
 		{
-			ArrayList<Word.Variant> variants=mind.dict.getVariants(str, true);
-			
-			for (Word.Variant v : variants)
-				new Idea(prev, next, str, v, mind).remove(true);
-			
-			ArrayList<Thing> things;
-			
-			String strSin=mind.dict.switchPOS(str, Word.POS.NOUN);
-			
-			things=mind.getThings(str);
+			things=mind.getThings(strSin);
 			
 			for (Thing t : things)
-				new Idea(prev, next, str, t, mind).remove(true);
-			
-			if (!str.equals(strSin))
-			{
-				things=mind.getThings(strSin);
-				
-				for (Thing t : things)
-					new Idea(prev, next, str, t, true, mind).remove(true);
-			}
-			
-			boolean hasNoun=false;
-			for (Word.Variant v : variants)
-				if (Word.posMatches(Word.POS.NOUN, v.pos))
-					hasNoun=true;
-			
-			if (hasNoun || variants.size()==0)
-				new Idea(prev, next, str, new Thing(str), mind);
-			
-			boolean hasPlNoun=false;
-			for (Word.Variant v : variants)
-				if (Word.posMatches(Word.POS.NOUN_PL, v.pos))
-					hasPlNoun=true;
-			
-			if (hasPlNoun || variants.size()==0)
-				new Idea(prev, next, str, new Thing(str), true, mind);
+				new Idea(prev, next, str, t, true, mind).remove(true);
 		}
+		
+		boolean hasAdj=false;
+		for (Word.Variant v : variants)
+			if (Word.posMatches(Word.POS.ADJ, v.pos))
+				hasAdj=true;
+		
+		if (hasAdj || variants.size()==0)
+			new Idea(prev, next, str, new Prop.Attrib(str), mind).remove(true);
+		
+		boolean hasNoun=false;
+		for (Word.Variant v : variants)
+			if (Word.posMatches(Word.POS.NOUN, v.pos))
+				hasNoun=true;
+		
+		if (hasNoun || variants.size()==0)
+			new Idea(prev, next, str, new Thing(str), mind).remove(true);
+		
+		boolean hasPlNoun=false;
+		for (Word.Variant v : variants)
+			if (Word.posMatches(Word.POS.NOUN_PL, v.pos))
+				hasPlNoun=true;
+		
+		if (hasPlNoun || variants.size()==0)
+			new Idea(prev, next, str, new Thing(str), true, mind).remove(true);
 	}
 	
 	//this is where the magic happens
 	public boolean merge()
 	{
-		if (hasMerged)
-			return false;
-		
-		hasMerged=true;
-		
 		if (thing!=null)
 		{
 			
+		}
+		else if (props.size()!=0)
+		{
+			ArrayList<IdeaData> ideas=new ArrayList<>();
+			
+			getPropsFwd(ideas);
+			
+			for (IdeaData data : ideas)
+				new Idea(data, mind).remove(true);
 		}
 		else if (variant!=null)
 		{
@@ -215,12 +241,34 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				getThingsFwd(ideas);
 				
 				for (IdeaData data : ideas)
-					new Idea(data, mind);
+					new Idea(data, mind).remove(true);
 			}
 		}
 		else
 		{
-			
+			switch (str)
+			{
+			case "and":
+				
+				for (Idea idea0 : prev.prev)
+				{
+					
+					if (idea0.props.size()>0)
+					{
+						for (Idea idea1 : next.next)
+						{
+							if (idea1.props.size()>0)
+							{
+								ArrayList<Prop> allProps=new ArrayList<>();
+								allProps.addAll(idea0.props);
+								allProps.addAll(idea1.props);
+								new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, allProps, mind).remove(true);
+							}
+						}
+					}
+				}
+				break;
+			}
 		}
 		
 		return false;
@@ -230,7 +278,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	{
 		if (thing!=null)
 		{
-			data.add(new IdeaData(prev, next, str, thing.copy()));
+			data.add(new IdeaData(prev, next, str, thing.copy(), plural));
 		}
 		else if (variant!=null)
 		{
@@ -247,7 +295,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				{
 					IdeaData elem=data.get(i);
 					
-					elem.str=str+elem.str;
+					elem.str=str+" "+elem.str;
 					elem.prev=prev;
 					
 					if (elem.thing!=null)
@@ -257,9 +305,63 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				}
 			}
 		}
-		else
+	}
+	
+	/*private void getPropsBkwd(ArrayList<IdeaData> data)
+	{
+		if (props.size()>0)
 		{
+			int start=data.size(); //stops the method from interfering with elements that do not go through it
 			
+			for (Idea idea : prev.prev)
+				idea.getPropsBkwd(data);
+			
+			if (data.size()==start)
+				data.add(new IdeaData(prev, next, ""));
+			
+			for (int i=start; i<data.size(); i++)
+			{
+				IdeaData elem=data.get(i);
+				
+				for (Prop prop : props)
+					elem.props.add(prop);
+				
+				elem.next=next;
+				
+				if (elem.str.length()>0)
+					elem.str=elem.str+" ";
+				
+				elem.str=elem.str+str;
+			}
+		}
+	}*/
+	
+	private void getPropsFwd(ArrayList<IdeaData> data)
+	{
+		if (props.size()>0)
+		{
+			int start=data.size(); //stops the method from interfering with elements that do not go through it
+			
+			for (Idea idea : next.next)
+				idea.getPropsFwd(data);
+			
+			if (data.size()==start)
+				data.add(new IdeaData(prev, next, ""));
+			
+			for (int i=start; i<data.size(); i++)
+			{
+				IdeaData elem=data.get(i);
+				
+				for (Prop prop : props)
+					elem.props.add(prop);
+				
+				elem.prev=prev;
+				
+				if (elem.str.length()>0)
+					elem.str=" "+elem.str;
+				
+				elem.str=str+elem.str;
+			}
 		}
 	}
 	
@@ -278,7 +380,33 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	//if this idea is equal to another idea (note that to return true, the Things must be the exact same thing, not just matching things)
 	public boolean equals(Idea o)
 	{
-		return variant==o.variant && ((thing==null && o.thing==null) || (thing!=null && o.thing!=null && thing.equals(o.thing))) && plural==o.plural && str.equals(o.str);
+		if (variant!=o.variant)
+			return false;
+		
+		if (props.size()!=o.props.size())
+			return false;
+		else
+		{ //assumes properties are in the same order, will return not equal otherwise
+			for (int i=0; i<props.size(); i++)
+			{
+				if (!props.get(i).equals(o.props.get(i)))
+					return false;
+			}
+		}
+		
+		if (thing!=o.thing)
+		{
+			if (thing==null || o.thing==null || !thing.equals(o.thing))
+				return false;
+		}
+		
+		if (plural!=o.plural)
+			return false;
+		
+		if (!str.equals(o.str))
+			return false;
+		
+		return true;
 	}
 	
 	//removes this idea from the structure, it then becomes invalid and trying to use us is a bad idea
@@ -313,6 +441,22 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		if (thing!=null)
 		{
 			out=thing.toString();
+			if (plural)
+				out+="(PL)";
+		}
+		else if (props.size()>0)
+		{
+			out="[";
+			
+			for (int i=0; i<props.size(); i++)
+			{
+				Prop prop=props.get(i);
+				out+=prop;
+				if (i<props.size()-1)
+					out+=", ";
+			}
+			
+			out+="]";
 		}
 		else if (variant!=null)
 		{
@@ -332,6 +476,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		IdeaNode next, prev; //note that IdeaData can not be part of the data structure, this is just information on how to place an Idea made from it
 		public String str;
 		public Word.Variant variant;
+		public ArrayList<Prop> props;
 		public boolean plural;
 		//ArrayList<Thing> things;
 		public Thing thing;
@@ -340,7 +485,8 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		{
 			next=null;
 			prev=null;
-			str=null;
+			str="";
+			props=new ArrayList<>();
 			variant=null;
 			plural=false;
 			thing=null;
@@ -370,6 +516,16 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			prev=prevIn;
 			str=strIn;
 			thing=thingIn;
+		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn, boolean plIn)
+		{
+			this();
+			next=nextIn;
+			prev=prevIn;
+			str=strIn;
+			thing=thingIn;
+			plural=plIn;
 		}
 	}
 }

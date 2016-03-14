@@ -20,7 +20,7 @@ public class Word
 		ADJ, //describes a noun
 		ADJ_SPR, //superlative; very general adjective like 'large', 'rude' and 'best'
 		ADV, //adverb, describes a verb
-		PREP, //preposition, links two things like 'inside' or 'during'
+		PREP, //preposition, links two things like 'over' or 'during'
 		INTRJ, //interjection; 'hay' 'yo'
 		CONJ, //conjunction; 'neither', 'and', 'if'
 		OTHER //things that are not any other part of speech, also has special uses depending on context

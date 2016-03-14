@@ -4,12 +4,15 @@ import java.util.ArrayList;
 
 public class Thing
 {
+	//do not add or remove from this list manually, use addProp and removeProp
 	public ArrayList<Prop> props;
+	public boolean isAbstract;
 	public Thing nxtThing=null;
 	
 	Thing()
 	{
 		props=new ArrayList<>();
+		isAbstract=false;
 	}
 	
 	Thing(String name)
@@ -43,9 +46,68 @@ public class Thing
 		return output;
 	}
 	
-	public void addProp(Prop newProp)
+	public void addProp(Prop prop)
 	{
-		props.add(newProp);
+		if (prop instanceof Prop.Instance)
+		{
+			WidapMind.errorMsg("tried to add Prop.Instance directly to thing, this is a no-no");
+			return;
+		}
+		else if (prop instanceof Prop.Type)
+		{
+			if (!((Prop.Type)prop).type.isAbstract)
+				WidapMind.errorMsg("set "+getName()+"'s type to concrete thing, "+((Prop.Type)prop).type.getName());
+			
+			((Prop.Type)prop).type.props.add(new Prop.Instance(this));
+		}
+		else if (prop instanceof Prop.Abstract)
+		{
+			if (isAbstract)
+			{
+				WidapMind.errorMsg("added abstract prop twice to "+toString());
+				return;
+			}
+			
+			isAbstract=true;
+		}
+		
+		props.add(prop);
+	}
+	
+	public void removeProp(Prop prop)
+	{
+		if (prop instanceof Prop.Instance)
+		{
+			Thing other=((Prop.Instance)prop).instance;
+			other.removeProp(other.getProp(new Prop.Type(this)));
+		}
+		else
+		{
+			if (prop instanceof Prop.Type) 
+			{
+				ArrayList<Prop> otherProps=((Prop.Type)prop).type.props;
+				
+				for (int i=0; i<otherProps.size(); i++)
+				{
+					Prop prop0=otherProps.get(i);
+					
+					if (prop0 instanceof Prop.Instance)
+					{
+						if (((Prop.Instance)prop0).instance==((Prop.Type)prop).type)
+						{
+							otherProps.remove(i);
+							return;
+						}
+					}
+				}
+			}
+			else if (prop instanceof Prop.Abstract)
+			{
+				isAbstract=false;
+			}
+			
+			props.remove(prop);
+		}
 	}
 	
 	//returns the string of the first name type property
@@ -75,96 +137,27 @@ public class Thing
 	
 	public Thing getType()
 	{
-		Prop prop=getProp(Prop.Name.class);
+		Prop prop=getProp(Prop.Type.class);
 		
 		if (prop==null)
 			return null;
 		else
-			return ((Prop.Type)prop).type();
+			return ((Prop.Type)prop).type;
 	}
 	
 	public ArrayList<Thing> getTypes()
 	{
-		ArrayList<Prop> props=getProps(Prop.Name.class);
 		ArrayList<Thing> things=new ArrayList<>();
 		
 		for (Prop prop : props)
 		{
-			if (((Prop.Type)prop).type()!=null)
+			if (prop instanceof Prop.Type)
 			{
-				things.add(((Prop.Type)prop).type());
+				things.add(((Prop.Type)prop).type);
 			}
 		}
 		
 		return things;
-	}
-	
-	public Prop.VarietyEnum getVariety()
-	{
-		Prop prop=getProp(Prop.Name.class);
-		
-		if (prop==null)
-			return Prop.VarietyEnum.OTHER;
-		else
-			return ((Prop.Variety)prop).variety();
-	}
-	
-	boolean isNoun()
-	{
-		for (Prop prop : props)
-		{
-			if (prop.getClass().equals(Prop.Variety.class))
-			{
-				if (((Prop.Variety)prop).isNoun())
-					return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	boolean isVerb()
-	{
-		for (Prop prop : props)
-		{
-			if (prop.getClass().equals(Prop.Variety.class))
-			{
-				if (((Prop.Variety)prop).isVerb())
-					return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	boolean isAbstract()
-	{
-		for (Prop prop : props)
-		{
-			if (prop.getClass().equals(Prop.Variety.class))
-			{
-				if (((Prop.Variety)prop).isAbstract())
-					return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	boolean isConcrete()
-	{
-		for (Prop prop : props)
-		{
-			if (prop.getClass().equals(Prop.Variety.class))
-			{
-				if (((Prop.Variety)prop).isConcrete())
-					return true;
-			}
-		}
-		
-		return false;
-		
-		//return ((Prop.Variety)getProp(Prop.Variety)).isConcrete();
 	}
 	
 	public boolean hasProp(Prop other)
@@ -186,6 +179,17 @@ public class Thing
 			{
 				return prop;
 			}
+		}
+		
+		return null;
+	}
+	
+	public Prop getProp(Prop in)
+	{
+		for (Prop prop : props)
+		{
+			if (prop.equals(in))
+				return prop;
 		}
 		
 		return null;
@@ -245,13 +249,14 @@ public class Thing
 	
 	public String toString()
 	{
-		Prop prop;
 		String out="{";
 		
 		for (int i=0; i<props.size(); i++)
 		{
-			prop=props.get(i);
-			out+=prop.id()+": "+prop.str()+(i==props.size()-1?"":", ");
+			Prop prop=props.get(i);
+			out+=prop;
+			if (i<props.size()-1)
+				out+=", ";
 		}
 		
 		out+="}";

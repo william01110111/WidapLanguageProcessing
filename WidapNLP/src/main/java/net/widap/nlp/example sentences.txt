@@ -1,0 +1,13 @@
+this file contains example sentences that WidapNLP should eventually be able to process:
+
+Aerodynamic red cars are fast.
+I am going on a trip next Tuesday.
+How old is William?
+Since it is going to rain today, we are planning a movie marathon.
+What is your chicken's name?
+How many chickens does it take to screw up a movie marathon?
+Chickens are wearing fashionable clothing for the first annual Chicken Parade!
+"Bok, bok, bok," said Penelope, the putative 'leader' of the chickens opposing the parade.
+Chickens on the left, chickens on the right! There's going to be a chicken fight!
+Most chickens only manage to raise one chick.
+Chickens are being bred to have dinosaur feet.
