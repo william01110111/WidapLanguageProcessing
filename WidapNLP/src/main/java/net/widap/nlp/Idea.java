@@ -205,7 +205,11 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				hasNoun=true;
 		
 		if (hasNoun || variants.size()==0)
-			new Idea(prev, next, str, new Thing(str), mind).remove(true);
+		{
+			Thing thing=new Thing(str);
+			thing.addProp(new Prop.Abstract());
+			new Idea(prev, next, str, thing, false, mind).remove(true);
+		}
 		
 		boolean hasPlNoun=false;
 		for (Word.Variant v : variants)
@@ -213,11 +217,15 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				hasPlNoun=true;
 		
 		if (hasPlNoun || variants.size()==0)
-			new Idea(prev, next, str, new Thing(str), true, mind).remove(true);
+		{
+			Thing thing=new Thing(str);
+			thing.addProp(new Prop.Abstract());
+			new Idea(prev, next, str, thing, true, mind).remove(true);
+		}
 	}
 	
 	//this is where the magic happens
-	public boolean merge()
+	public void merge()
 	{
 		if (thing!=null)
 		{
@@ -234,7 +242,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		}
 		else if (variant!=null)
 		{
-			if (Word.posMatches(Word.POS.ADJ, variant.pos))
+			/*if (Word.posMatches(Word.POS.ADJ, variant.pos))
 			{
 				ArrayList<IdeaData> ideas=new ArrayList<>();
 				
@@ -242,14 +250,13 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				
 				for (IdeaData data : ideas)
 					new Idea(data, mind).remove(true);
-			}
+			}*/
 		}
 		else
 		{
 			switch (str)
 			{
 			case "and":
-				
 				for (Idea idea0 : prev.prev)
 				{
 					
@@ -268,73 +275,108 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 					}
 				}
 				break;
+			
+			case "the":
+				ArrayList<IdeaData> ideas=new ArrayList<>();
+				
+				getThingsFwd(ideas);
+				
+				for (IdeaData data : ideas)
+					new Idea(data, mind).remove(true);
+				break;
 			}
 		}
-		
-		return false;
 	}
 	
 	private void getThingsFwd(ArrayList<IdeaData> data)
 	{
 		if (thing!=null)
 		{
-			data.add(new IdeaData(prev, next, str, thing.copy(), plural));
+			data.add(new IdeaData(prev, next, str, thing, plural));
 		}
-		else if (variant!=null)
+		else if (props.size()>0)
 		{
-			if (Word.posMatches(Word.POS.ADJ, variant.pos))
+			int start=data.size();
+			
+			for (Idea idea : next.next)
 			{
-				int start=data.size();
-				
-				for (Idea idea : next.next)
-				{
-					idea.getThingsFwd(data);
-				}
-				
-				for (int i=start; i<data.size(); i++)
-				{
-					IdeaData elem=data.get(i);
-					
-					elem.str=str+" "+elem.str;
-					elem.prev=prev;
-					
-					if (elem.thing!=null)
-					{
-						elem.thing.addProp(new Prop.Attrib(variant.txt));
-					}
-				}
+				idea.getThingsFwd(data);
 			}
-		}
-	}
-	
-	/*private void getPropsBkwd(ArrayList<IdeaData> data)
-	{
-		if (props.size()>0)
-		{
-			int start=data.size(); //stops the method from interfering with elements that do not go through it
-			
-			for (Idea idea : prev.prev)
-				idea.getPropsBkwd(data);
-			
-			if (data.size()==start)
-				data.add(new IdeaData(prev, next, ""));
 			
 			for (int i=start; i<data.size(); i++)
 			{
 				IdeaData elem=data.get(i);
 				
-				for (Prop prop : props)
-					elem.props.add(prop);
-				
-				elem.next=next;
-				
-				if (elem.str.length()>0)
-					elem.str=elem.str+" ";
-				
-				elem.str=elem.str+str;
+				if (elem.thing!=null && elem.thing.isAbstract)
+				{
+					Thing thing=new Thing();
+					thing.addProp(new Prop.Type(elem.thing));
+					
+					for (Prop prop : props)
+						thing.addProp(prop);
+					
+					elem.thing=thing; //note that the plurality of the thing stays what it was
+					
+					elem.str=str+" "+elem.str;
+					elem.prev=prev;
+				}
+				else
+				{
+					data.remove(i);
+					i--;
+				}
 			}
 		}
-	}*/
+		else if (variant!=null)
+		{
+			
+		}
+		else
+		{
+			if (data.size()==0)
+			{
+				switch (str)
+				{
+				case "the":
+					
+					int start=data.size();
+					
+					for (Idea idea : next.next)
+						idea.getThingsFwd(data);
+					
+					for (int i=start; i<data.size(); i++)
+					{
+						IdeaData elem=data.get(i);
+						
+						if (elem.thing!=null)
+						{
+							if (elem.thing.isAbstract)
+							{
+								Thing thing=new Thing();
+								thing.addProp(new Prop.Type(elem.thing));
+								elem.thing=thing;
+							}
+							
+							Thing type=elem.thing.getType();
+							
+							//want to know what this line does? sucks for you.
+							type.addProp(new Prop.DefaultInstance((Prop.Instance)type.getProp(new Prop.Instance(elem.thing))));
+							
+							elem.str=str+" "+elem.str;
+							elem.prev=prev;
+						}
+						else
+						{
+							data.remove(i);
+							i--;
+						}
+					}
+					
+					break;
+				}
+			}
+		}
+	}
 	
 	private void getPropsFwd(ArrayList<IdeaData> data)
 	{
@@ -515,7 +557,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			next=nextIn;
 			prev=prevIn;
 			str=strIn;
-			thing=thingIn;
+			thing=thingIn.copy();
 		}
 		
 		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn, boolean plIn)
@@ -524,7 +566,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			next=nextIn;
 			prev=prevIn;
 			str=strIn;
-			thing=thingIn;
+			thing=thingIn.copy();
 			plural=plIn;
 		}
 	}

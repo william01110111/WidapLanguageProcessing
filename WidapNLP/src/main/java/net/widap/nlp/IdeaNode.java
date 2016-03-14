@@ -89,6 +89,23 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		return start;
 	}
 	
+	//returns all the ideas that span from the start to the end
+	public ArrayList<Idea> getSingleIdeas()
+	{
+		IdeaNode start=getStart(), end=getEnd();
+		ArrayList<Idea> out=new ArrayList<>();
+		
+		for (Idea idea : start.next)
+		{
+			if (idea.next==end)
+			{
+				out.add(idea);
+			}
+		}
+		
+		return out;
+	}
+	
 	//if this is part of a structure that contains at least one idea
 	public boolean hasIdeas()
 	{
@@ -106,26 +123,25 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 	
 	public void mergeAll()
 	{
-		boolean didSomething;
-		int i=0;
+		int ideaNum;
 		
 		do
 		{
-			didSomething=false;
+			ideaNum=ideas.size();
+			
 			for (int j=0; j<ideas.size(); j++)
 			{
+				if (j>10000)
+				{
+					WidapMind.errorMsg("merge loop timed out, indicating either an endless loop or just a hella complicated sentence");
+					break;
+				}
+				
 				Idea idea=ideas.get(j);
-				if (idea.merge())
-					didSomething=true;
+				idea.merge();
 			}
-			
-			if (i++>100000)
-			{
-				WidapMind.errorMsg("merge loop timed out, indicating either an endless loop or just a hella complicated sentence");
-				break;
-			}
-		} 
-		while (didSomething); //loop until things stop happening
+		}
+		while (ideas.size()>ideaNum); //loop until things stop happening
 	}
 	
 	//has issues

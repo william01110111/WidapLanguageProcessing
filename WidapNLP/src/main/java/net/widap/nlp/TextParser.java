@@ -130,6 +130,14 @@ public class TextParser
 		{
 			//out=nodeStrt.toStringList();
 			out=nodeStrt.toStringVisual();
+			
+			ArrayList<Idea> ideas=nodeStrt.getSingleIdeas();
+			
+			if (ideas.size()==1)
+			{
+				out+="sentence processed successfully, adding to memory...";
+				mind.addThing(ideas.get(0).thing);
+			}
 		}
 		
 		return out;
@@ -401,6 +409,26 @@ public class TextParser
 				
 				output+=combineList(strs)+".";
 			}
+		}
+		else if (input.equals("list things"))
+		{
+			Thing thing=mind.thingStrt;
+			int i=0, max=120;
+			
+			output+="listing up to "+max+" things...\n";
+			
+			while (thing!=null && i<max)
+			{
+				output+=thing+"\n";
+				
+				thing=thing.nxtThing;
+				i++;
+			}
+			
+			if (thing==null)
+				output+="thing list finished";
+			else
+				output+="there are more things that weren't displayed";
 		}
 		
 		if (output.equals(""))

@@ -59,8 +59,7 @@ public abstract class Prop
 	}
 	
 	//what type of thing it is, San Fransisco's type would be city, William's type would be person
-	//the type object is almost always has the abstract variety of this object's variety; abstract things can have a type
-	//San Fransisco is of concrete variety SPECIF; city's has an abstract variety of GENERAL and a type of place
+	//the type thing is always abstract; abstract things can have a type; San Fransisco is not abstract; city is
 	static class Type extends Prop
 	{
 		public final Thing type;
@@ -71,13 +70,6 @@ public abstract class Prop
 		}
 		String id() {return "type";}
 		String str() {return type==null?"[null]":type.getName();}
-	}
-	
-	static class Abstract extends Prop
-	{
-		Abstract(){}
-		String id() {return "abstract";}
-		String str() {return "yes";}
 	}
 	
 	//the things who's type is this
@@ -93,6 +85,28 @@ public abstract class Prop
 		
 		String id() {return "instance";}
 		String str() {return instance==null?"[null]":instance.getName();}
+	}
+	
+	//the default instance is the one someone means when they say 'the ...'
+	//this system will probably need to be improved
+	static class DefaultInstance extends Prop
+	{
+		public final Instance instance;
+		
+		DefaultInstance(Instance inst)
+		{
+			instance=inst;
+		}
+		
+		String id() {return "default instance";}
+		String str() {return instance==null?"[null]":instance.str();}
+	}
+	
+	static class Abstract extends Prop
+	{
+		Abstract(){}
+		String id() {return "abstract";}
+		String str() {return "yes";}
 	}
 	
 	static class Color extends Prop

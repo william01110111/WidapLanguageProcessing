@@ -9,6 +9,8 @@ public class Thing
 	public boolean isAbstract;
 	public Thing nxtThing=null;
 	
+	public static final String defaultName="[unnamed thing]";
+	
 	Thing()
 	{
 		props=new ArrayList<>();
@@ -116,7 +118,7 @@ public class Thing
 		Prop prop=getProp(Prop.Name.class);
 		
 		if (prop==null)
-			return "[unnamed thing]";
+			return defaultName;
 		else
 			return prop.str();
 	}
