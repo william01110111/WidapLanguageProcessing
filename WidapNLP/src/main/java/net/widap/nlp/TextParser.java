@@ -110,37 +110,76 @@ public class TextParser
 		
 		if (out!=null)
 			return out;
+		else out="";
 		
-		IdeaNode nodeStrt=str2Ideas(input);
+		IdeaNode start=str2Ideas(input);
 		//Idea.Node nodeStrt=new Idea.Node();
 		
-		if (WidapMind.lotsOfChecks)
-			nodeStrt.checkStructure();
+		Idea idea=findIdea(start);
 		
-		parseIdeas(nodeStrt);
+		//out=nodeStrt.toStringList();
+		out+=start.toStringVisual();
 		
-		if (WidapMind.lotsOfChecks)
-			nodeStrt.checkStructure();
-		
-		if (!nodeStrt.hasIdeas())
+		if (idea==null)
+			out+="could not resolve input into a single idea\n";
+		else if (idea.thing==null)
 		{
-			out="[parseIdeas() failed to parse '"+input+"']";
+			out+="idea that was selected ("+idea+") had no thing\n";
 		}
 		else
 		{
-			//out=nodeStrt.toStringList();
-			out=nodeStrt.toStringVisual();
-			
-			ArrayList<Idea> ideas=nodeStrt.getSingleIdeas();
-			
-			if (ideas.size()==1)
-			{
-				out+="sentence processed successfully, adding to memory...";
-				mind.addThing(ideas.get(0).thing);
-			}
+			out+="sentence processed successfully, adding to memory...\n";
+			Thing thing=mind.addThing(idea.thing);
+			thing.addProps(idea.props);
 		}
 		
 		return out;
+	}
+	
+	//returns the best Idea from the node structure
+	public static Idea findIdea(IdeaNode start)
+	{
+		if (WidapMind.lotsOfChecks)
+			start.checkStructure();
+		
+		parseIdeas(start);
+		
+		if (WidapMind.lotsOfChecks)
+			start.checkStructure();
+		
+		ArrayList<Idea> ideas=start.getSingleIdeas();
+		
+		if (ideas.size()==0)
+			return null;
+		else if (ideas.size()==1)
+			return ideas.get(0);
+		else
+		{
+			for (Idea idea0 : ideas)
+			{
+				if (idea0.thing!=null)
+				{
+					boolean containsAll=true;
+					
+					for (Idea idea1 : ideas)
+					{
+						if (idea0!=idea1 && !idea0.contains(idea1))
+						{
+							containsAll=false;
+							break;
+						}
+					}
+					
+					if (containsAll)
+					{
+						return idea0;
+					}
+				}
+			}
+			
+			WidapMind.errorMsg("was unable to determine the best idea, so choosing the first one");
+			return ideas.get(0);
+		}
 	}
 	
 	//parses explicitly programmed commands, such as quit, and takes the appropriate action
@@ -440,7 +479,7 @@ public class TextParser
 		return output;
 	}
 	
-	private void parseIdeas(IdeaNode start)
+	private static void parseIdeas(IdeaNode start)
 	{
 		start.splitAll();
 		start.mergeAll();

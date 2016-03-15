@@ -1,6 +1,7 @@
 package net.widap.nlp;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Thing
 {
@@ -74,6 +75,12 @@ public class Thing
 		}
 		
 		props.add(prop);
+	}
+	
+	public void addProps(ArrayList<Prop> props)
+	{
+		for (Prop prop : props)
+			addProp(prop);
 	}
 	
 	public void removeProp(Prop prop)

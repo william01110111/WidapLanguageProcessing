@@ -197,31 +197,37 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				hasAdj=true;
 		
 		if (hasAdj || variants.size()==0)
-			new Idea(prev, next, str, new Prop.Attrib(str), mind).remove(true);
+			new Idea(prev, next, str, new Prop.Attrib(strSin), mind).remove(true);
 		
 		boolean hasNoun=false;
 		for (Word.Variant v : variants)
 			if (Word.posMatches(Word.POS.NOUN, v.pos))
 				hasNoun=true;
 		
-		if (hasNoun || variants.size()==0)
+		if (hasNoun)
 		{
-			Thing thing=new Thing(str);
+			Thing thing=new Thing(strSin);
 			thing.addProp(new Prop.Abstract());
 			new Idea(prev, next, str, thing, false, mind).remove(true);
 		}
+		
+		if (variants.size()==0)
+			new Idea(prev, next, str, new Thing(strSin), false, mind).remove(true);
 		
 		boolean hasPlNoun=false;
 		for (Word.Variant v : variants)
 			if (Word.posMatches(Word.POS.NOUN_PL, v.pos))
 				hasPlNoun=true;
 		
-		if (hasPlNoun || variants.size()==0)
+		if (hasPlNoun)
 		{
-			Thing thing=new Thing(str);
+			Thing thing=new Thing(strSin);
 			thing.addProp(new Prop.Abstract());
 			new Idea(prev, next, str, thing, true, mind).remove(true);
 		}
+		
+		if (variants.size()==0)
+			new Idea(prev, next, str, new Thing(strSin), true, mind).remove(true);
 	}
 	
 	//this is where the magic happens
@@ -259,7 +265,6 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			case "and":
 				for (Idea idea0 : prev.prev)
 				{
-					
 					if (idea0.props.size()>0)
 					{
 						for (Idea idea1 : next.next)
@@ -283,6 +288,42 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 				
 				for (IdeaData data : ideas)
 					new Idea(data, mind).remove(true);
+				break;
+			
+			case "is":
+				for (Idea idea0 : prev.prev)
+				{
+					if (idea0.thing!=null && !idea0.plural && !idea0.thing.isAbstract)
+					{
+						for (Idea idea1 : next.next)
+						{
+							if (idea1.props.size()>0)
+							{
+								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, false, mind);
+								idea.props.addAll(idea1.props);
+								idea.remove(true);
+							}
+						}
+					}
+				}
+				break;
+			
+			case "are":
+				for (Idea idea0 : prev.prev)
+				{
+					if (idea0.thing!=null && idea0.plural)
+					{
+						for (Idea idea1 : next.next)
+						{
+							if (idea1.props.size()>0)
+							{
+								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, true, mind);
+								idea.props.addAll(idea1.props);
+								idea.remove(true);
+							}
+						}
+					}
+				}
 				break;
 			}
 		}
@@ -451,6 +492,42 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		return true;
 	}
 	
+	//if this idea contains another idea
+	public boolean contains(Idea o)
+	{
+		if (variant!=o.variant)
+			return false;
+		
+		if (thing!=null && o.thing!=null && !thing.contains(o.thing))
+			return false;
+		
+		if (thing==null && o.thing!=null)
+			return false;
+		
+		
+		if (props.size()<o.props.size())
+			return false;
+		
+		for (Prop prop : props)
+		{
+			boolean hasMatch=false;
+			
+			for (Prop oProp : o.props)
+			{
+				if (prop.equals(oProp))
+				{
+					hasMatch=true;
+					break;
+				}
+			}
+			
+			if (!hasMatch)
+				return false;
+		}
+		
+		return true;
+	}
+	
 	//removes this idea from the structure, it then becomes invalid and trying to use us is a bad idea
 	public void remove(boolean onlyIfDupli)
 	{
@@ -470,7 +547,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	
 	public String toString()
 	{
-		String out="[no data in Idea]";
+		String out="";
 			/*if (things.size()>0)
 			{
 				ArrayList<String> list=new ArrayList<>();
@@ -482,13 +559,17 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			}*/
 		if (thing!=null)
 		{
-			out=thing.toString();
+			out+=thing.toString();
 			if (plural)
 				out+="(PL)";
 		}
-		else if (props.size()>0)
+		
+		if (props.size()>0)
 		{
-			out="[";
+			if (!out.equals(""))
+				out+="←";
+			
+			out+="[";
 			
 			for (int i=0; i<props.size(); i++)
 			{
@@ -500,14 +581,19 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 			
 			out+="]";
 		}
-		else if (variant!=null)
+		
+		if (variant!=null)
 		{
-			out=variant.toString();
+			out+=variant.toString();
 		}
-		else if (str!=null)
+		
+		if (out.equals("") && str!=null)
 		{
-			out="'"+str+"'";
+			out+="'"+str+"'";
 		}
+		
+		if (out.equals(""))
+			out="[no data in Idea]";
 		
 		return out;
 	}
