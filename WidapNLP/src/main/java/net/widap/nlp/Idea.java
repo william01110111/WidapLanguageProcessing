@@ -400,6 +400,9 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 							
 							Thing type=elem.thing.getType();
 							
+							if (thing==null)
+								break;
+							
 							//want to know what this line does? sucks for you.
 							type.addProp(new Prop.DefaultInstance((Prop.Instance)type.getProp(new Prop.Instance(elem.thing))));
 							
@@ -584,7 +587,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		
 		if (variant!=null)
 		{
-			out+=variant.toString();
+			out+="("+variant.toString()+")";
 		}
 		
 		if (out.equals("") && str!=null)

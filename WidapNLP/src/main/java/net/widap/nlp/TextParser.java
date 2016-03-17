@@ -118,7 +118,8 @@ public class TextParser
 		Idea idea=findIdea(start);
 		
 		//out=nodeStrt.toStringList();
-		out+=start.toStringVisual();
+		out+=start.toStringVisual2();
+		//out+=start.toStringVisual0();
 		
 		if (idea==null)
 			out+="could not resolve input into a single idea\n";

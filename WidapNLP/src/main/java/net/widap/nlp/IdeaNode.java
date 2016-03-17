@@ -177,7 +177,7 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 	}
 	
 	//display the entire data structure visually using text
-	public String toStringVisual()
+	public String toStringVisual0()
 	{
 		//below are the thick unicode box drawing characters that can be copied from
 		/*retrieved from http://unicode-table.com/en/blocks/box-drawing/
@@ -404,7 +404,7 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 	}
 	
 	//section in the visual display of the node structure
-	class VisualSect
+	static class VisualSect
 	{
 		public final IdeaNode strt, end;
 		public final ArrayList<String> lines;
@@ -437,6 +437,326 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 			{
 				idea.next.populateSectList(sects);
 			}
+		}
+	}
+	
+	public String toStringVisual1()
+	{
+		ArrayList<ArrayList<Idea>> grid=new ArrayList<>();
+		grid.add(new ArrayList<Idea>());
+		
+		getStart().populateIdeaGrid(grid, 0, 0);
+		
+		String out="diagram:\n";
+		
+		for (ArrayList<Idea> list : grid)
+		{
+			for (Idea idea : list)
+			{
+				if (idea!=null)
+					out+="-"+idea.toString()+"-";
+			}
+			out+="\n";
+		}
+		
+		return out;
+	}
+	
+	public int populateIdeaGrid(ArrayList<ArrayList<Idea>> grid, int x, int y)
+	{
+		int w=grid.get(0).size(), h=grid.size();
+		boolean quit=false;
+		
+		for (int x0=0; x0<w && !quit; x0++)
+		{
+			for (int y0=y-1; y0>=0 && !quit; y0--)
+			{
+				if (grid.get(y0).get(x0)!=null && grid.get(y0).get(x0).next==this)
+				{
+					quit=true;
+					
+					if (x0<x)
+					{
+						for (int i=0; i<y; i++)
+						{
+							ArrayList<Idea> instList=new ArrayList<>();
+							Idea instIdea=grid.get(i).get(x0);
+							
+							for (int j=0; j<x-x0; j++)
+								instList.add(instIdea);
+							
+							grid.get(i).addAll(x0, instList);
+						}
+						
+						ArrayList<Idea> nullList=new ArrayList<>();
+						
+						for (int j=0; j<x-x0; j++)
+							nullList.add(null);
+						
+						for (int i=y; i<h; i++)
+							grid.get(i).addAll(nullList);
+						
+						x0=x;
+						w=grid.get(0).size();
+					}
+					
+					Idea idea=grid.get(y).get(x);
+					
+					for (int i=x+1; i<x0; i++)
+						grid.get(y).set(i, idea);
+					
+					x=x0;
+				}
+			}
+		}
+		
+		if (quit || next.size()==0)
+			return y+1;
+		else
+		{
+			int yPos=y;
+			
+			while (x+1>=w)
+			{
+				for (int i=0; i<h; i++)
+					grid.get(i).add(null);
+				
+				w=grid.get(0).size();
+			}
+			
+			for (int i=0; i<next.size(); i++)
+			{
+				while (yPos>=h) 
+				{
+					ArrayList<Idea> list=new ArrayList<>();
+					for (int j=0; j<w+1; j++)
+						list.add(null);
+					grid.add(list);
+					h=grid.size();
+				}
+				
+				grid.get(yPos).set(x+1, next.get(i));
+				//WidapMind.message(grid.get(i+y).get(x+1).toString());
+				yPos=next.get(i).next.populateIdeaGrid(grid, x+1, yPos);
+				h=grid.size();
+				w=grid.get(0).size();
+			}
+			
+			return yPos;
+		}
+	}
+	
+	public String toStringVisual2()
+	{
+		ArrayList<String> strs=new ArrayList<>();
+		ArrayList<VisualNodeData> nodes=new ArrayList<>();
+		
+		getStart().toStringVisual2(strs, nodes);
+		
+		String start="START ━", end="━ END";
+		int offset=start.length();
+		
+		for (int i=0; i<strs.size(); i++)
+		{
+			String prefix, suffix;
+			if (i==0)
+			{
+				prefix=start;
+				suffix=end;
+			}
+			else
+			{
+				prefix="";
+				
+				for (int j=0; j<start.length(); j++)
+					prefix+=" ";
+				
+				suffix="";
+				
+				for (int j=0; j<end.length(); j++)
+					suffix+=" ";
+			}
+			
+			String pad="";
+			int padLng=strs.get(0).length()-strs.get(i).length()+1;
+			
+			for (int j=0; j<padLng; j++)
+				pad+=" ";
+			
+			pad+=suffix;
+			
+			strs.set(i, prefix+strs.get(i)+pad);
+		}
+		
+		for (VisualNodeData node : nodes)
+		{
+			for (int i=node.low; i<=node.hgh; i++)
+			{
+				if (strs.get(i).charAt(node.xPos+offset)==' ' || strs.get(i).charAt(node.xPos+offset)=='━')
+				{
+					String s0=strs.get(i).substring(0, node.xPos+offset);
+					String s1=strs.get(i).substring(node.xPos+offset+1, strs.get(i).length());
+					String s;
+					
+					if (strs.get(i).charAt(node.xPos+offset)=='━')
+					{
+						s="┃";
+					}
+					else if (i==node.low)
+					{
+						if (s0.endsWith(" "))
+							s="┏";
+						else if (s1.startsWith(" "))
+							s="┓";
+						else
+							s="┳";
+					}
+					else if (i==node.hgh)
+					{
+						if (s0.endsWith(" "))
+							s="┗";
+						else if (s1.startsWith(" "))
+							s="┛";
+						else
+							s="┻";
+					}
+					else
+					{
+						if (s0.endsWith(" ") && s1.startsWith(" "))
+							s="┃";
+						else if (s0.endsWith(" "))
+							s="┣";
+						else if (s1.startsWith(" "))
+							s="┫";
+						else
+							s="╋";
+					}
+					
+					strs.set(i, s0+s+s1);
+				}
+			}
+		}
+		
+		//━ ┃ ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋
+		//┿
+		
+		String out="toStringVisual2 output:\n";
+		for (String line : strs)
+			out+=line+"\n";
+		
+		return out;
+	}
+	
+	private void toStringVisual2(ArrayList<String> strs, ArrayList<VisualNodeData> nodes)
+	{
+		for (VisualNodeData node : nodes)
+			if (node.node==this)
+				return;
+		
+		ArrayList<String> lines=new ArrayList<>();
+		ArrayList<VisualNodeData> nodeList=new ArrayList<>();
+		
+		for (Idea idea : prev)
+		{
+			boolean quit=true;
+			
+			for (int i=0; i<nodes.size() && quit; i++)
+			{
+				VisualNodeData node=nodes.get(i);
+				
+				if (node.node==idea.prev)
+				{
+					lines.add(idea.toString());
+					nodeList.add(node);
+					quit=false;
+				}
+			}
+			
+			if (quit)
+				return;
+		}
+		
+		int xPos=0;
+		int low=strs.size(), hgh=0;
+		
+		for (int i=0; i<lines.size(); i++) 
+		{
+			int newX=nodeList.get(i).xPos+1+lines.get(i).length();
+			if (newX>xPos)
+				xPos=newX;
+		}
+		
+		for (int i=0; i<lines.size(); i++)
+		{
+			boolean inserted=false;
+			int start=nodeList.get(i).xPos;
+			int y=0;
+			
+			for (int j=0; j<strs.size() && !inserted; j++)
+			{
+				if (strs.get(j).length()<=start)
+				{
+					String pad="";
+					
+					for (int k=0; k<start-strs.get(j).length()+1; k++)
+						pad+=" ";
+					
+					strs.set(j, strs.get(j)+pad+lines.get(i));
+					inserted=true;
+					nodeList.get(i).low=Math.min(nodeList.get(i).low, j);
+					nodeList.get(i).hgh=Math.max(nodeList.get(i).hgh, j);
+					low=Math.min(low, j);
+					hgh=Math.max(hgh, j);
+					y=j;
+				}
+			}
+			
+			if (!inserted)
+			{
+				String pad="";
+				
+				for (int j=0; j<start+1; j++)
+					pad+=" ";
+				
+				//strs.add(pad+(i==0?"━":(i==strs.size()-1?"┗":"┣"))+lines.get(i));
+				strs.add(pad+lines.get(i));
+				nodeList.get(i).low=Math.min(nodeList.get(i).low, strs.size()-1);
+				nodeList.get(i).hgh=Math.max(nodeList.get(i).hgh, strs.size()-1);
+				low=Math.min(low, strs.size()-1);
+				hgh=Math.max(hgh, strs.size()-1);
+				y=strs.size()-1;
+			}
+			
+			int padLng=xPos-(lines.get(i).length()+start)-1;
+			String pad="";
+					
+			for (int j=0; j<padLng; j++)
+				pad+="━";
+			
+			strs.set(y, strs.get(y)+pad);
+		}
+		
+		nodes.add(new VisualNodeData(low, hgh, xPos, this));
+		
+		for (Idea idea : next)
+			idea.next.toStringVisual2(strs, nodes);
+		
+		//━ ┃ ┏ ┓ ┗ ┛ ┣ ┫ ┳ ┻ ╋
+	}
+	
+	//used in toStringVisual2
+	private static class VisualNodeData
+	{
+		public int low, hgh;
+		public int xPos;
+		public IdeaNode node;
+		
+		VisualNodeData(int inLow, int inHgh, int inXPos, IdeaNode inNode)
+		{
+			low=inLow;
+			hgh=inHgh;
+			xPos=inXPos;
+			node=inNode;
 		}
 	}
 	
