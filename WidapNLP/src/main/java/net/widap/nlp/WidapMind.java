@@ -41,23 +41,27 @@ public class WidapMind
 		
 		if (things.size()>1)
 		{
-			WidapMind.errorMsg("there were multiple things that matched "+in+", aborting thing add");
-			return null;
+			WidapMind.errorMsg("there were multiple things that matched "+in+", returning the first one");
+			return things.get(0);
 		}
-		
-		if (things.size()==0)
+		else if (things.size()==0)
+		{
+			return things.get(0);
+		}
+		else //(things.size()==0)
 		{
 			in.nxtThing=thingStrt;
 			thingStrt=in;
 			
-			for (int i=0; i<in.props.size(); i++)
+			/*for (int i=0; i<in.props.size(); i++)
 			{
 				Prop prop=in.props.get(0);
 				
-				if (prop instanceof Prop.Type)
+				if (prop instanceof Prop.Link)
 				{
-					Thing other;
-					if ((other=addThing(((Prop.Type)prop).type))!=((Prop.Type)prop).type)
+					Thing other=addThing(((Prop.Type)prop).other);
+					
+					if (other!=((Prop.Type)prop).other)
 					{
 						in.removeProp(prop);
 						i--;
@@ -65,19 +69,17 @@ public class WidapMind
 						in.addProp(new Prop.Type(other));
 					}
 				}
-			}
+			}*/
 			
 			return in;
 		}
-		else
-			return things.get(0);
 	}
 	
 	//you send this method an attrib name and a value to match, its a bit confusing.
 	//a normal call would be getThing("name", "tardis")
 	//with atrbName being literally the string "name" because you want to find the thing who's name is tardis
 	//another call could be getThing("color", "blue"); this would return all the blue things
-	public ArrayList<Thing> getThings(String atrbName, String atrbval)
+	public ArrayList<Thing> getThings(String atrbName, String atrbVal)
 	{
 		Thing thing=thingStrt;
 		ArrayList<Thing> list=new ArrayList<>();
@@ -88,7 +90,7 @@ public class WidapMind
 			
 			for (String str : vals)
 			{
-				if (str.equals(atrbval))
+				if (str.equals(atrbVal))
 				{
 					list.add(thing);
 				}
@@ -135,7 +137,7 @@ public class WidapMind
 	
 	public static void message(String msg)
 	{
-		System.out.println("WidapMind message: "+msg);
+		WidapNLPMain.print("WidapMind message: "+msg+"\n", "msg");
 	}
 	
 	public static void errorMsg(String msg)
@@ -144,14 +146,14 @@ public class WidapMind
 		{
 			StackTraceElement[] ste=Thread.currentThread().getStackTrace();
 			
-			System.out.println("WidapMind error in "+ste[2].getClassName()+"."+ste[2].getMethodName()+"(): "+msg);
+			WidapNLPMain.print("WidapMind error in "+ste[2].getClassName()+"."+ste[2].getMethodName()+"(): "+msg+"\n", "err");
 			
 			if (errorNum>=0)
 				++errorNum;
 		}
 		else if (errorNum==maxErrorNum)
 		{
-			System.out.println("more WidapMind errors hidden");
+			WidapNLPMain.print("more WidapMind errors hidden\n", "err");
 			++errorNum;
 		}
 	}

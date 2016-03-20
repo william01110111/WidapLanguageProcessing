@@ -25,13 +25,12 @@ public class Thing
 		addProp(new Prop.Name(name));
 	}
 	
-	//only a shallow copy because properties are supposed to be immutable
 	Thing copy()
 	{
 		Thing out=new Thing();
 		
 		for (Prop prop : props)
-			out.addProp(prop);
+			out.addProp(prop.copy()); //this will usually make a shallow copy but will make a deep one when needed
 		
 		return out;
 	}
@@ -58,10 +57,10 @@ public class Thing
 		}
 		else if (prop instanceof Prop.Type)
 		{
-			if (!((Prop.Type)prop).type.isAbstract)
-				WidapMind.errorMsg("set "+getName()+"'s type to concrete thing, "+((Prop.Type)prop).type.getName());
+			if (!((Prop.Type)prop).other.isAbstract)
+				WidapMind.errorMsg("set "+getName()+"'s type to concrete thing, "+((Prop.Type)prop).other.getName());
 			
-			((Prop.Type)prop).type.props.add(new Prop.Instance(this));
+			((Prop.Type)prop).other.props.add(new Prop.Instance(this));
 		}
 		else if (prop instanceof Prop.Abstract)
 		{
@@ -75,6 +74,7 @@ public class Thing
 		}
 		
 		props.add(prop);
+		prop.addedToThing(this);
 	}
 	
 	public void addProps(ArrayList<Prop> props)
@@ -85,49 +85,31 @@ public class Thing
 	
 	public void removeProp(Prop prop)
 	{
-		if (prop instanceof Prop.Instance)
-		{
-			Thing other=((Prop.Instance)prop).instance;
-			other.removeProp(other.getProp(new Prop.Type(this)));
-		}
-		else
-		{
-			if (prop instanceof Prop.Type) 
-			{
-				ArrayList<Prop> otherProps=((Prop.Type)prop).type.props;
-				
-				for (int i=0; i<otherProps.size(); i++)
-				{
-					Prop prop0=otherProps.get(i);
-					
-					if (prop0 instanceof Prop.Instance)
-					{
-						if (((Prop.Instance)prop0).instance==((Prop.Type)prop).type)
-						{
-							otherProps.remove(i);
-							return;
-						}
-					}
-				}
-			}
-			else if (prop instanceof Prop.Abstract)
-			{
-				isAbstract=false;
-			}
-			
-			props.remove(prop);
-		}
+		props.remove(prop);
+		prop.removedFromThing(this);
 	}
 	
 	//returns the string of the first name type property
 	public String getName()
 	{
-		Prop prop=getProp(Prop.Name.class);
+		Prop prop;
 		
-		if (prop==null)
-			return defaultName;
-		else
+		prop=getProp(Prop.Name.class);
+		
+		if (prop!=null)
 			return prop.str();
+		
+		prop=getProp(Prop.DefaultOfType.class);
+		
+		if (prop!=null)
+			return "the "+prop.str();
+		
+		prop=getProp(Prop.Type.class);
+		
+		if (prop!=null)
+			return "a "+prop.str();
+		
+		return defaultName;
 	}
 	
 	//simply returns if the given string matches at least one name
@@ -151,7 +133,7 @@ public class Thing
 		if (prop==null)
 			return null;
 		else
-			return ((Prop.Type)prop).type;
+			return ((Prop.Type)prop).other;
 	}
 	
 	public ArrayList<Thing> getTypes()
@@ -162,7 +144,7 @@ public class Thing
 		{
 			if (prop instanceof Prop.Type)
 			{
-				things.add(((Prop.Type)prop).type);
+				things.add(((Prop.Type)prop).other);
 			}
 		}
 		
@@ -193,17 +175,6 @@ public class Thing
 		return null;
 	}
 	
-	public Prop getProp(Prop in)
-	{
-		for (Prop prop : props)
-		{
-			if (prop.equals(in))
-				return prop;
-		}
-		
-		return null;
-	}
-	
 	public ArrayList<Prop> getProps(Class propClass)
 	{
 		ArrayList<Prop> props=new ArrayList<>();
@@ -219,23 +190,34 @@ public class Thing
 		return props;
 	}
 	
+	public Prop getProp(Prop in)
+	{
+		for (Prop prop : props)
+		{
+			if (prop.equals(in))
+				return prop;
+		}
+		
+		return null;
+	}
+	
 	//essentially merges the other thing into this one
 	//does not mess with the linked list
-	//the attributes that are added to this thing remain linked to the old thing, so it is recommended that the old thing is gotten rid of
 	public void appendThing(Thing other)
 	{
 		for (Prop prop : other.props)
 		{
 			boolean repeat=false;
 			
+			//loop to check to see if the old an new prop
 			for (Prop prop1 : props)
 			{
-				if (prop.getClass().equals(prop1.getClass()) && prop.id().equals(prop1.id()) && prop.str().equals(prop1.str()))
+				if (prop.equals(prop1))
 					repeat=true;
 			}
 			
 			if (!repeat)
-				props.add(prop);
+				addProp(prop.copy());
 		}
 	}
 	

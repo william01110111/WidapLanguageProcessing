@@ -1,5 +1,10 @@
 package net.widap.nlp;
 
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.TypeVariable;
+import java.util.List;
+import java.util.Objects;
+
 public abstract class Prop
 {
 	Prop() {}
@@ -7,14 +12,20 @@ public abstract class Prop
 	//returns the id string of the property, could be "name", "color" or "type"
 	String id()
 	{
-		return "[no id]";
+		return getClass().getSimpleName().toLowerCase();
 	}
 	
 	//returns the value of this property as a string, could be "tardis", "blue", or "time machine" respectively
 	String str()
 	{
-		return "[no value]";
+		return id();
 	}
+	
+	//does any internal operations that need to be done immediately after adding to a thing; called automatically
+	public void addedToThing(Thing thing) {}
+	
+	//does any internal operations that need to be done immediately after removing from a thing; called automatically
+	public void removedFromThing(Thing thing) {}
 	
 	public String toString()
 	{
@@ -25,6 +36,12 @@ public abstract class Prop
 	{
 		return getClass().equals(other.getClass()) && id().equals(other.id()) && str().equals(other.str());
 	}
+	
+	//returns a copy of this property, it if fine to just return this (as is default) if that won't mess anything up
+	public Prop copy() {return this;}
+	
+	//checks the property for internal errors and displays them with WidapMind.errMsg()
+	public void check() {}
 	
 	//a general attribute that doesn't fit into any specific type of property, or for an unknown property type
 	static class Attrib extends Prop
@@ -58,48 +75,126 @@ public abstract class Prop
 		String str() {return name;}
 	}
 	
+	static class Link extends Prop
+	{
+		public final Thing other;
+		
+		private Link otherLink=null;
+		private boolean removeOther=true;
+		
+		public Link(Thing otherIn)
+		{
+			other=otherIn;
+		}
+		
+		String id() {return "link";}
+		
+		String str() {return other==null?"[null]":other.getName();}
+		
+		public boolean equals(Prop prop)
+		{
+			return getClass().equals(prop.getClass()) && other==((Link)prop).other && id().equals(prop.id());
+		}
+		
+		public final void addToThing(Thing thing)
+		{
+			//this will happen in normal operation, it is not an error
+			if (otherLink!=null)
+				return;
+			
+			makeOtherLink(thing);
+		}
+		
+		protected void makeOtherLink(Thing thing)
+		{
+			makeOtherLink(new Link(thing));
+		}
+		
+		protected final void makeOtherLink(Link link)
+		{
+			//this will happen in normal operation, it is not an error
+			if (otherLink!=null)
+				return;
+			
+			otherLink=link;
+			otherLink.otherLink=this;
+			other.addProp(otherLink);
+		}
+		
+		public final void remove(Thing thing)
+		{
+			if (removeOther)
+			{
+				otherLink.removeOther=false;
+				other.removeProp(otherLink);
+			}
+		}
+		
+		public Prop copy()
+		{
+			try
+			{
+				return this.getClass().getDeclaredConstructor(Thing.class).newInstance(other);
+			}
+			catch(Exception e)
+			{
+				WidapMind.errorMsg("exception in Link.copy: "+e.getMessage());
+				e.printStackTrace();
+				return this;
+			}
+		}
+	}
+	
 	//what type of thing it is, San Fransisco's type would be city, William's type would be person
 	//the type thing is always abstract; abstract things can have a type; San Fransisco is not abstract; city is
-	static class Type extends Prop
+	static class Type extends Link
 	{
-		public final Thing type;
+		Type(Thing thing) {super(thing);}
 		
-		Type(Thing type0)
-		{
-			type=type0;
-		}
 		String id() {return "type";}
-		String str() {return type==null?"[null]":type.getName();}
+		
+		protected void makeOtherLink(Thing thing)
+		{
+			makeOtherLink(new Instance(thing));
+		}
 	}
 	
 	//the things who's type is this
 	//this should never be created directly, Thing.addProp will make it for you
-	static class Instance extends Prop
+	static class Instance extends Link
 	{
-		public final Thing instance;
-		
-		Instance(Thing inst)
-		{
-			instance=inst;
-		}
+		Instance(Thing thing) {super(thing);}
 		
 		String id() {return "instance";}
-		String str() {return instance==null?"[null]":instance.getName();}
+		
+		protected void makeOtherLink(Thing thing)
+		{
+			makeOtherLink(new Type(thing));
+		}
 	}
 	
-	//the default instance is the one someone means when they say 'the ...'
-	//this system will probably need to be improved
-	static class DefaultInstance extends Prop
+	static class DefaultOfType extends Link
 	{
-		public final Instance instance;
+		DefaultOfType(Thing thing) {super(thing);}
 		
-		DefaultInstance(Instance inst)
+		String id() {return "default of type";}
+		
+		protected void makeOtherLink(Thing thing)
 		{
-			instance=inst;
+			makeOtherLink(new DefaultInstance(thing));
 		}
+	}
+	
+	static class DefaultInstance extends Link
+	{
+		DefaultInstance(Thing thing) {super(thing);}
 		
 		String id() {return "default instance";}
-		String str() {return instance==null?"[null]":instance.str();}
+		
+		protected void makeOtherLink(Thing thing)
+		{
+			makeOtherLink(new DefaultOfType(thing));
+		}
 	}
 	
 	static class Abstract extends Prop
@@ -107,6 +202,7 @@ public abstract class Prop
 		Abstract(){}
 		String id() {return "abstract";}
 		String str() {return "yes";}
+		void remove(Thing thing) {thing.isAbstract=false;}
 	}
 	
 	static class Color extends Prop

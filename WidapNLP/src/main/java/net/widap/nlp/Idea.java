@@ -404,7 +404,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 								break;
 							
 							//want to know what this line does? sucks for you.
-							type.addProp(new Prop.DefaultInstance((Prop.Instance)type.getProp(new Prop.Instance(elem.thing))));
+							type.addProp(new Prop.DefaultInstance(elem.thing));
 							
 							elem.str=str+" "+elem.str;
 							elem.prev=prev;

@@ -6,34 +6,45 @@ public class WidapNLPMain
 {
 	
 	static boolean runTerm=true; //if to run the interactive terminal, quits after init otherwise
+	static String lastPrintType=null;
 	
 	public static void main(String args[])
 	{
 		WidapMind mind=new WidapMind();
 		
 		Scanner reader=new Scanner(System.in);
-		String input, output="";
+		String input, output;
 		
 		new DictLoaderFormat1("assets/azdictionary.txt", mind.dict);
 		
-		System.out.println("\n[WidapMind started]");
+		print("[WidapMind started]\n", "status");
 		
 		if (runTerm)
 		{
-			System.out.println("\nWidapMind: Hello");
+			print("WidapMind: Hello\n", "mind");
 			
 			while (!mind.getQuit())
 			{
-				System.out.print("\nUser: ");
+				print("User: ", "user");
 				
 				input=reader.nextLine();
 				
 				output=mind.parse(input);
 				
-				System.out.print("\nWidapMind: "+output);
+				print("WidapMind: "+output, "mind");
 			}
 		}
 		
-		System.out.println("\n[WidapMind quit]");
+		print("[WidapMind quit]\n", "status");
+	}
+	
+	public static void print(String str, String type)
+	{
+		if (lastPrintType!=null && !type.equals(lastPrintType))
+			System.out.println();
+		
+		lastPrintType=type;
+		
+		System.out.print(str);
 	}
 }
