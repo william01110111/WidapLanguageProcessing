@@ -6,7 +6,8 @@ import java.util.ArrayList;
  *  Created by william on 3/9/16.
  */
 
-public class Idea//an idea that can be anything from an unrecognised word to a thing with attributes and actions
+//an idea that can be anything from an unrecognised word to a thing with attributes and actions
+public class Idea
 {
 	WidapMind mind;
 	
@@ -94,7 +95,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	public Idea(IdeaNode n0, IdeaNode n1, String inStr, ArrayList<Prop> inProps, WidapMind m)
 	{
 		this(n0, n1, inStr, m);
-		props=inProps;
+		props.addAll(inProps);
 	}
 	
 	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing inThing, WidapMind m)
@@ -114,7 +115,7 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		this(data.prev, data.next, m);
 		str=data.str;
 		variant=data.variant;
-		props=data.props;
+		props.addAll(data.props);
 		plural=data.plural;
 		thing=data.thing; //its ok that it doesn't make a copy, the Thing in IdeaData should be unique
 	}
@@ -233,18 +234,21 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	//this is where the magic happens
 	public void merge()
 	{
+		ArrayList<IdeaData> ideas=new ArrayList<>();
+		
+		getThingsFwd(ideas);
+		getPropsFwd(ideas);
+		
+		for (IdeaData data : ideas)
+			new Idea(data, mind).remove(true);
+		
 		if (thing!=null)
 		{
 			
 		}
 		else if (props.size()!=0)
 		{
-			ArrayList<IdeaData> ideas=new ArrayList<>();
 			
-			getPropsFwd(ideas);
-			
-			for (IdeaData data : ideas)
-				new Idea(data, mind).remove(true);
 		}
 		else if (variant!=null)
 		{
@@ -262,69 +266,6 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		{
 			switch (str)
 			{
-			case "and":
-				for (Idea idea0 : prev.prev)
-				{
-					if (idea0.props.size()>0)
-					{
-						for (Idea idea1 : next.next)
-						{
-							if (idea1.props.size()>0)
-							{
-								ArrayList<Prop> allProps=new ArrayList<>();
-								allProps.addAll(idea0.props);
-								allProps.addAll(idea1.props);
-								new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, allProps, mind).remove(true);
-							}
-						}
-					}
-				}
-				break;
-			
-			case "the":
-				ArrayList<IdeaData> ideas=new ArrayList<>();
-				
-				getThingsFwd(ideas);
-				
-				for (IdeaData data : ideas)
-					new Idea(data, mind).remove(true);
-				break;
-			
-			case "is":
-				for (Idea idea0 : prev.prev)
-				{
-					if (idea0.thing!=null && !idea0.plural && !idea0.thing.isAbstract)
-					{
-						for (Idea idea1 : next.next)
-						{
-							if (idea1.props.size()>0)
-							{
-								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, false, mind);
-								idea.props.addAll(idea1.props);
-								idea.remove(true);
-							}
-						}
-					}
-				}
-				break;
-			
-			case "are":
-				for (Idea idea0 : prev.prev)
-				{
-					if (idea0.thing!=null && idea0.plural)
-					{
-						for (Idea idea1 : next.next)
-						{
-							if (idea1.props.size()>0)
-							{
-								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, true, mind);
-								idea.props.addAll(idea1.props);
-								idea.remove(true);
-							}
-						}
-					}
-				}
-				break;
 			}
 		}
 	}
@@ -400,10 +341,9 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 							
 							Thing type=elem.thing.getType();
 							
-							if (thing==null)
+							if (type==null)
 								break;
 							
-							//want to know what this line does? sucks for you.
 							type.addProp(new Prop.DefaultInstance(elem.thing));
 							
 							elem.str=str+" "+elem.str;
@@ -447,6 +387,70 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 					elem.str=" "+elem.str;
 				
 				elem.str=str+elem.str;
+			}
+		}
+	}
+	
+	private void mergeConjunctions(ArrayList<IdeaData> data)
+	{
+		if (thing!=null || props.size()>0 || variant!=null)
+		{
+			switch (str)
+			{
+			case "and":
+				for (Idea idea0 : prev.prev)
+				{
+					if (idea0.thing==null && idea0.props.size()>0)
+					{
+						for (Idea idea1 : next.next)
+						{
+							if (idea1.thing==null && idea1.props.size()>0)
+							{
+								ArrayList<Prop> allProps=new ArrayList<>();
+								allProps.addAll(idea0.props);
+								allProps.addAll(idea1.props);
+								new IdeaData(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, allProps);
+							}
+						}
+					}
+				}
+				break;
+			
+			case "is":
+				for (Idea idea0 : prev.prev)
+				{
+					if (idea0.thing!=null && !idea0.plural && !idea0.thing.isAbstract)
+					{
+						for (Idea idea1 : next.next)
+						{
+							if (idea1.props.size()>0)
+							{
+								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, false, mind);
+								idea.props.addAll(idea1.props);
+								idea.remove(true);
+							}
+						}
+					}
+				}
+				break;
+			
+			case "are":
+				for (Idea idea0 : prev.prev)
+				{
+					if (idea0.thing!=null && idea0.plural)
+					{
+						for (Idea idea1 : next.next)
+						{
+							if (idea1.props.size()>0)
+							{
+								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, true, mind);
+								idea.props.addAll(idea1.props);
+								idea.remove(true);
+							}
+						}
+					}
+				}
+				break;
 			}
 		}
 	}
@@ -636,30 +640,34 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 		
 		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Word.Variant variantIn)
 		{
-			this();
-			next=nextIn;
-			prev=prevIn;
-			str=strIn;
+			this(prevIn, nextIn, strIn);
 			variant=variantIn;
 		}
 		
 		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn)
 		{
-			this();
-			next=nextIn;
-			prev=prevIn;
-			str=strIn;
+			this(prevIn, nextIn, strIn);
 			thing=thingIn.copy();
 		}
 		
 		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn, boolean plIn)
 		{
-			this();
-			next=nextIn;
-			prev=prevIn;
-			str=strIn;
+			this(prevIn, nextIn, strIn);
 			thing=thingIn.copy();
 			plural=plIn;
 		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, ArrayList<Prop> propsIn)
+		{
+			this(prevIn, nextIn, strIn);
+			props.addAll(propsIn);
+		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Prop prop)
+		{
+			this(prevIn, nextIn, strIn);
+			props.add(prop);
+		}
+		
 	}
 }

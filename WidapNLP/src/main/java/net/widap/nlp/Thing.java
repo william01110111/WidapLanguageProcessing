@@ -1,7 +1,6 @@
 package net.widap.nlp;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class Thing
 {
@@ -30,7 +29,8 @@ public class Thing
 		Thing out=new Thing();
 		
 		for (Prop prop : props)
-			out.addProp(prop.copy()); //this will usually make a shallow copy but will make a deep one when needed
+			out.addProp(prop); //no need to call copy as it will automatically be called if needed from getPropToAdd()
+			//out.addProp(prop.copy()); //this will usually make a shallow copy but will make a deep one when needed
 		
 		return out;
 	}
@@ -50,19 +50,7 @@ public class Thing
 	
 	public void addProp(Prop prop)
 	{
-		if (prop instanceof Prop.Instance)
-		{
-			WidapMind.errorMsg("tried to add Prop.Instance directly to thing, this is a no-no");
-			return;
-		}
-		else if (prop instanceof Prop.Type)
-		{
-			if (!((Prop.Type)prop).other.isAbstract)
-				WidapMind.errorMsg("set "+getName()+"'s type to concrete thing, "+((Prop.Type)prop).other.getName());
-			
-			((Prop.Type)prop).other.props.add(new Prop.Instance(this));
-		}
-		else if (prop instanceof Prop.Abstract)
+		if (prop instanceof Prop.Abstract)
 		{
 			if (isAbstract)
 			{
@@ -73,8 +61,7 @@ public class Thing
 			isAbstract=true;
 		}
 		
-		props.add(prop);
-		prop.addedToThing(this);
+		props.add(prop.getPropToAdd(this));
 	}
 	
 	public void addProps(ArrayList<Prop> props)

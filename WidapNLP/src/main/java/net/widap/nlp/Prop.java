@@ -21,8 +21,8 @@ public abstract class Prop
 		return id();
 	}
 	
-	//does any internal operations that need to be done immediately after adding to a thing; called automatically
-	public void addedToThing(Thing thing) {}
+	//returns the property to add to the thing, will normally just return this, if returned null, will do nothing
+	public Prop getPropToAdd(Thing thing) {return this;}
 	
 	//does any internal operations that need to be done immediately after removing from a thing; called automatically
 	public void removedFromThing(Thing thing) {}
@@ -80,7 +80,7 @@ public abstract class Prop
 		public final Thing other;
 		
 		private Link otherLink=null;
-		private boolean removeOther=true;
+		private boolean removeOther=false;
 		
 		public Link(Thing otherIn)
 		{
@@ -97,13 +97,16 @@ public abstract class Prop
 			return getClass().equals(prop.getClass()) && other.equals(((Link)prop).other); && id().equals(prop.id());
 		}*/
 		
-		public final void addToThing(Thing thing)
+		public final Prop getPropToAdd(Thing thing)
 		{
-			//this will happen in normal operation, it is not an error
-			if (otherLink!=null)
-				return;
+			if (removeOther)
+				return copy().getPropToAdd(thing);
 			
-			makeOtherLink(thing);
+			//this will happen in normal operation, it is not an error
+			if (otherLink==null)
+				makeOtherLink(thing);
+			
+			return this;
 		}
 		
 		protected void makeOtherLink(Thing thing)
@@ -113,16 +116,13 @@ public abstract class Prop
 		
 		protected final void makeOtherLink(Link link)
 		{
-			//this will happen in normal operation, it is not an error
-			if (otherLink!=null)
-				return;
-			
 			otherLink=link;
 			otherLink.otherLink=this;
 			other.addProp(otherLink);
+			removeOther=true;
 		}
 		
-		public final void remove(Thing thing)
+		public final void removedFromThing(Thing thing)
 		{
 			if (removeOther)
 			{

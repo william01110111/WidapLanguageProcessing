@@ -14,6 +14,7 @@ public class WidapMind
 	static final int maxErrorNum=240;
 	static final boolean lotsOfChecks=true; //if to run checks on many of the internal data structures
 	//turning off may speed things up considerably, and it won't cause any new errors, just fail the catch any that may arise
+	static final boolean stepThroughMerges=true; //if to display the idea data structure at each stage of the merging process
 	
 	private boolean quit=false;
 	
@@ -44,7 +45,7 @@ public class WidapMind
 			WidapMind.errorMsg("there were multiple things that matched "+in+", returning the first one");
 			return things.get(0);
 		}
-		else if (things.size()==0)
+		else if (things.size()==1)
 		{
 			return things.get(0);
 		}

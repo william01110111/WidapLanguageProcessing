@@ -127,11 +127,14 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		
 		do
 		{
+			if (WidapMind.stepThroughMerges)
+				WidapMind.message(toStringVisual2());
+			
 			ideaNum=ideas.size();
 			
-			for (int j=0; j<ideas.size(); j++)
+			for (int j=0; j<ideaNum; j++)
 			{
-				if (j>100)
+				if (ideaNum>1000)
 				{
 					WidapMind.errorMsg("merge loop timed out, indicating either an endless loop or just a hella complicated sentence");
 					return;
@@ -176,7 +179,8 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		return out;
 	}
 	
-	//display the entire data structure visually using text
+	//this function breaks on a lot of data structures and just outputs nonsense, use toStringVisual2() instead
+	//there is no toStringVisual1() because that completely failed. this one sort of worked and is a very complicated bit of code so I can't bring myself to delete it
 	public String toStringVisual0()
 	{
 		//below are the thick unicode box drawing characters that can be copied from
@@ -403,20 +407,7 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		}
 	}
 	
-	//section in the visual display of the node structure
-	static class VisualSect
-	{
-		public final IdeaNode strt, end;
-		public final ArrayList<String> lines;
-		
-		VisualSect(IdeaNode s, IdeaNode e, ArrayList<String> l)
-		{
-			strt=s;
-			end=e;
-			lines=l;
-		}
-	}
-	
+	//the recursive method for the deprecated toStringVisual0()
 	private void populateSectList(ArrayList<VisualSect> sects)
 	{
 		for (Idea idea : next)
@@ -440,26 +431,18 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		}
 	}
 	
-	public String toStringVisual1()
+	//this is the data structure for the deprecated toStringVisual0()
+	static class VisualSect
 	{
-		ArrayList<ArrayList<Idea>> grid=new ArrayList<>();
-		grid.add(new ArrayList<Idea>());
+		public final IdeaNode strt, end;
+		public final ArrayList<String> lines;
 		
-		getStart().populateIdeaGrid(grid, 0, 0);
-		
-		String out="diagram:\n";
-		
-		for (ArrayList<Idea> list : grid)
+		VisualSect(IdeaNode s, IdeaNode e, ArrayList<String> l)
 		{
-			for (Idea idea : list)
-			{
-				if (idea!=null)
-					out+="-"+idea.toString()+"-";
-			}
-			out+="\n";
+			strt=s;
+			end=e;
+			lines=l;
 		}
-		
-		return out;
 	}
 	
 	public int populateIdeaGrid(ArrayList<ArrayList<Idea>> grid, int x, int y)
@@ -546,6 +529,7 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		}
 	}
 	
+	//use this to see what this data structure looks like
 	public String toStringVisual2()
 	{
 		ArrayList<String> strs=new ArrayList<>();
@@ -553,7 +537,7 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 		
 		getStart().toStringVisual2(strs, nodes);
 		
-		String start="START ━", end="━ END";
+		String start="START━", end="━END";
 		int offset=start.length();
 		
 		for (int i=0; i<strs.size(); i++)
