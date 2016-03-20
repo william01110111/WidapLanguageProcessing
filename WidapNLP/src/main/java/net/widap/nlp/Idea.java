@@ -466,6 +466,9 @@ public class Idea//an idea that can be anything from an unrecognised word to a t
 	//if this idea is equal to another idea (note that to return true, the Things must be the exact same thing, not just matching things)
 	public boolean equals(Idea o)
 	{
+		if (this==o)
+			return true;
+		
 		if (variant!=o.variant)
 			return false;
 		

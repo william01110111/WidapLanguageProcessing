@@ -176,9 +176,15 @@ public class TextParser
 						return idea0;
 					}
 				}
+				
+				if (idea0.thing!=null)
+				{
+					WidapMind.errorMsg("was unable to determine the best idea, so choosing the first one that has a thing");
+					return idea0;
+				}
 			}
 			
-			WidapMind.errorMsg("was unable to determine the best idea, so choosing the first one");
+			WidapMind.errorMsg("was unable to find an idea with a thing, so choosing the first one");
 			return ideas.get(0);
 		}
 	}

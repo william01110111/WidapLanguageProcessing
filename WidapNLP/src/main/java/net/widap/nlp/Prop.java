@@ -91,10 +91,11 @@ public abstract class Prop
 		
 		String str() {return other==null?"[null]":other.getName();}
 		
-		public boolean equals(Prop prop)
+		//the default Prop equals method may say they are equal when they are not, but I have had endless problems with this because it is recursive (by calling Thing.equals)
+		/*public boolean equals(Prop prop)
 		{
-			return getClass().equals(prop.getClass()) && other==((Link)prop).other && id().equals(prop.id());
-		}
+			return getClass().equals(prop.getClass()) && other.equals(((Link)prop).other); && id().equals(prop.id());
+		}*/
 		
 		public final void addToThing(Thing thing)
 		{

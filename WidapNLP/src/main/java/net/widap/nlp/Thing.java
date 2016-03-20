@@ -235,7 +235,7 @@ public class Thing
 	
 	public boolean equals(Thing other)
 	{
-		return other.props.size()==props.size() && contains(other);
+		return this==other || (other.props.size()==props.size() && contains(other));
 	}
 	
 	public String toString()
