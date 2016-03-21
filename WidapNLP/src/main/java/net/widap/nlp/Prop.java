@@ -1,5 +1,11 @@
 package net.widap.nlp;
 
+enum PropBool
+{
+	ABSTRACT,
+	EVENT
+}
+
 public abstract class Prop
 {
 	Prop() {}
@@ -39,25 +45,42 @@ public abstract class Prop
 	public void check() {}
 	
 	//a general attribute that doesn't fit into any specific type of property, or for an unknown property type
-	static class Attrib extends Prop
+	static class PropStr extends Prop
 	{
 		private final String idStr, strStr;
 		
-		Attrib(String id, String str)
+		PropStr(String id, String str)
 		{
 			idStr=id;
 			strStr=str;
 		}
 		
-		Attrib(String str)
+		PropStr(String str)
 		{
-			idStr="attrib";
+			idStr="property";
 			strStr=str;
 		}
 		
 		String id() {return idStr;}
 		
 		String str() {return strStr;}
+	}
+	
+	//give a property a single boopean value
+	static class PropBool
+	{
+		public final PropBool val;
+		
+		PropBool(PropBool valIn)
+		{
+			val=valIn;
+		}
+		
+		String id() {return "bool property";}
+
+		String str() {return val == null ?"[null enum]": val.toString().toLowerCase();}
+		
+		public String toString() {return str();}
 	}
 	
 	//simply the name of the thing, a thing can have multiple names
@@ -248,14 +271,6 @@ public abstract class Prop
 		{
 			makeOtherLink(new DefaultOfType(thing));
 		}
-	}
-	
-	static class Abstract extends Prop
-	{
-		Abstract(){}
-		String id() {return "abstract";}
-		String str() {return "yes";}
-		public void removedFromThing(Thing thing) {thing.isAbstract=false;}
 	}
 	
 	static class Color extends Prop
