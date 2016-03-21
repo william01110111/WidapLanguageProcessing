@@ -12,7 +12,6 @@ public class Idea
 	private WidapMind mind;
 	
 	public IdeaNode next, prev;
-	private int nextHgh, prevHgh; //the highest in next.next and prev.prev that have been attempted to merge with
 	
 	public String str;
 	public Word.Variant variant;
@@ -27,7 +26,6 @@ public class Idea
 		//	WidapMind.message("made new Idea");
 		
 		mind=m;
-		nextHgh=0; prevHgh=0;
 		variant=null;
 		props=new ArrayList<>();
 		plural=false;
@@ -277,10 +275,7 @@ public class Idea
 				{
 					Thing thing=new Thing();
 					thing.addProp(new Prop.LinkTemp(Prop.Type.class, elem.thing));
-					
-					for (Prop prop : props)
-						thing.addProp(prop);
-					
+					thing.addProps(props);
 					elem.thing=thing; //note that the plurality of the thing stays what it was
 					
 					elem.str=str+" "+elem.str;
@@ -299,12 +294,12 @@ public class Idea
 		}
 		else
 		{
-			if (data.size()==0)
+			switch (str)
 			{
-				switch (str)
+			case "the":
+				
+				if (data.size()==0)
 				{
-				case "the":
-					
 					int start=data.size();
 					
 					for (Idea idea : next.next)
@@ -326,12 +321,16 @@ public class Idea
 							Thing type=elem.thing.getType();
 							
 							if (type==null)
-								break;
-							
-							elem.thing.addProp(new Prop.LinkTemp(Prop.DefaultOfType.class, type));
-							
-							elem.str=str+" "+elem.str;
-							elem.prev=prev;
+							{
+								data.remove(i);
+								i--;
+							}
+							else
+							{
+								elem.thing.addProp(new Prop.LinkTemp(Prop.DefaultOfType.class, type));
+								elem.str=str+" "+elem.str;
+								elem.prev=prev;
+							}
 						}
 						else
 						{
@@ -339,9 +338,9 @@ public class Idea
 							i--;
 						}
 					}
-					
-					break;
 				}
+					
+				break;
 			}
 		}
 	}

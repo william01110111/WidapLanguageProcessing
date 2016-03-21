@@ -276,9 +276,25 @@ public class Thing
 		return true;
 	}
 	
+	public boolean containsIgnoreLinks(Thing other)
+	{
+		for (Prop otherProp : other.props)
+		{
+			if (!(otherProp instanceof Prop.Link) && !(otherProp instanceof Prop.LinkTemp) && !hasProp(otherProp))
+				return false;
+		}
+		
+		return true;
+	}
+	
 	public boolean equals(Thing other)
 	{
 		return this==other || (other.props.size()==props.size() && contains(other));
+	}
+	
+	public boolean equalsIgnoreLinks(Thing other)
+	{
+		return this==other || (other.props.size()==props.size() && containsIgnoreLinks(other));
 	}
 	
 	public void check()

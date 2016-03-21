@@ -134,7 +134,7 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 			
 			for (int j=0; j<ideaNum; j++)
 			{
-				if (ideaNum>20)
+				if (ideaNum>60)
 				{
 					WidapMind.errorMsg("merge loop timed out, indicating either an endless loop or just a hella complicated sentence");
 					return;

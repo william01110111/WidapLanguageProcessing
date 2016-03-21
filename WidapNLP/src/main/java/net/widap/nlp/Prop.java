@@ -82,25 +82,25 @@ public abstract class Prop
 			linkClass=linkClassIn;
 		}
 		
-		String id() {return "temp link ("+linkClass.getSimpleName()+")";}
+		String id() {return "lnktmp ("+linkClass.getSimpleName()+")";}
 		
 		String str() {return other==null?"[null]":other.getName();}
 		
 		public boolean equals(Prop prop)
 		{
-			return getClass().equals(prop.getClass()) && linkClass==((LinkTemp)prop).linkClass && other.equals(((LinkTemp)prop).other);
+			return (getClass()==prop.getClass() && linkClass==((LinkTemp)prop).linkClass && other.equalsIgnoreLinks(((LinkTemp)prop).other)) || ((prop instanceof Link) && prop.equals(this));
 		}
 		
-		public Prop getRealLink()
+		public Link getRealLink()
 		{
 			try
 			{
 				//if there are a bunch of errors around here, it could be because you created this temp link with a linkClass that was not a Link subclass
-				return ((Link)linkClass.getDeclaredConstructor(Thing.class).newInstance(other));
+				return (Link)linkClass.getDeclaredConstructor(Thing.class).newInstance(other);
 			}
 			catch(Exception e)
 			{
-				WidapMind.errorMsg("exception in LinkTemp.getPropToAdd(): "+e.getMessage());
+				WidapMind.errorMsg("exception in LinkTemp.getRealLink(): "+e.getMessage());
 				e.printStackTrace();
 				return null;
 			}
@@ -131,13 +131,16 @@ public abstract class Prop
 		//the default Prop equals method may say they are equal when they are not, but I have had endless problems with this because it is recursive (by calling Thing.equals)
 		public boolean equals(Prop prop)
 		{
-			return getClass().equals(prop.getClass()) && other==((Link)prop).other && id().equals(prop.id());
+			return (getClass()==prop.getClass() && other.equalsIgnoreLinks(((Link)prop).other) && id().equals(prop.id())) || ((prop instanceof LinkTemp) && getClass()==((LinkTemp)prop).linkClass && other.equalsIgnoreLinks(((LinkTemp)prop).other));
 		}
 		
 		public final Prop getPropToAdd(Thing thing)
 		{
 			if (removeOther)
-				return copy().getPropToAdd(thing);
+			{
+				return getTempVersion().getPropToAdd(thing);
+				//return copy().getPropToAdd(thing);
+			}
 			
 			//this will happen in normal operation, it is not an error
 			if (otherLink==null)
@@ -157,6 +160,7 @@ public abstract class Prop
 			otherLink.otherLink=this;
 			other.addProp(otherLink);
 			removeOther=true;
+			otherLink.removeOther=true;
 		}
 		
 		public Link newLinkSameType(Thing thingIn)
@@ -180,6 +184,12 @@ public abstract class Prop
 				otherLink.removeOther=false;
 				other.removeProp(otherLink);
 			}
+		}
+		
+		//returns the temporary version of this link
+		public LinkTemp getTempVersion()
+		{
+			return new LinkTemp(getClass(), other);
 		}
 		
 		public Prop copy()

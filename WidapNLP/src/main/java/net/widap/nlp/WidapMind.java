@@ -14,8 +14,8 @@ public class WidapMind
 	static final int maxErrorNum=240;
 	static final boolean lotsOfChecks=true; //if to run checks on many of the internal data structures
 	//turning off may speed things up considerably, and it won't cause any new errors, just fail the catch any that may arise
-	static final boolean stepThroughMerges=true; //if to display the idea data structure at each stage of the merging process
-	static final boolean extraMessages=true; //if true, lots od updates will be printed to track the creation, modification and removal of things
+	static final boolean stepThroughMerges=false; //if to display the idea data structure at each stage of the merging process
+	static final boolean extraMessages=false; //if true, lots od updates will be printed to track the creation, modification and removal of things
 	
 	private boolean quit=false;
 	
@@ -66,7 +66,7 @@ public class WidapMind
 			
 			for (int i=0; i<in.props.size(); i++)
 			{
-				Prop prop=in.props.get(0);
+				Prop prop=in.props.get(i);
 				
 				if (prop instanceof Prop.Link)
 				{
@@ -83,7 +83,8 @@ public class WidapMind
 				{
 					in.removeProp(i);
 					i--;
-					in.addProp(((Prop.LinkTemp)prop).getRealLink());
+					Prop.Link link=((Prop.LinkTemp)prop).getRealLink();
+					in.addProp(link);
 				}
 			}
 			
