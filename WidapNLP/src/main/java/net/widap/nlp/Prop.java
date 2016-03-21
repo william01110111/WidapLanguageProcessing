@@ -1,10 +1,5 @@
 package net.widap.nlp;
 
-import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.TypeVariable;
-import java.util.List;
-import java.util.Objects;
-
 public abstract class Prop
 {
 	Prop() {}
@@ -75,6 +70,48 @@ public abstract class Prop
 		String str() {return name;}
 	}
 	
+	//a one way link that is usually used to keep things from getting tangled; makes a normal link when adding to the thing
+	static class LinkTemp extends Prop
+	{
+		public final Thing other;
+		public final Class linkClass;
+		
+		public LinkTemp(Class linkClassIn, Thing otherIn)
+		{
+			other=otherIn;
+			linkClass=linkClassIn;
+		}
+		
+		String id() {return "temp link ("+linkClass.getSimpleName()+")";}
+		
+		String str() {return other==null?"[null]":other.getName();}
+		
+		public boolean equals(Prop prop)
+		{
+			return getClass().equals(prop.getClass()) && linkClass==((LinkTemp)prop).linkClass && other.equals(((LinkTemp)prop).other);
+		}
+		
+		public Prop getRealLink()
+		{
+			try
+			{
+				//if there are a bunch of errors around here, it could be because you created this temp link with a linkClass that was not a Link subclass
+				return ((Link)linkClass.getDeclaredConstructor(Thing.class).newInstance(other));
+			}
+			catch(Exception e)
+			{
+				WidapMind.errorMsg("exception in LinkTemp.getPropToAdd(): "+e.getMessage());
+				e.printStackTrace();
+				return null;
+			}
+		}
+		
+		public Prop copy()
+		{
+			return new LinkTemp(linkClass, other.copy());
+		}
+	}
+	
 	static class Link extends Prop
 	{
 		public final Thing other;
@@ -92,10 +129,10 @@ public abstract class Prop
 		String str() {return other==null?"[null]":other.getName();}
 		
 		//the default Prop equals method may say they are equal when they are not, but I have had endless problems with this because it is recursive (by calling Thing.equals)
-		/*public boolean equals(Prop prop)
+		public boolean equals(Prop prop)
 		{
-			return getClass().equals(prop.getClass()) && other.equals(((Link)prop).other); && id().equals(prop.id());
-		}*/
+			return getClass().equals(prop.getClass()) && other==((Link)prop).other && id().equals(prop.id());
+		}
 		
 		public final Prop getPropToAdd(Thing thing)
 		{
@@ -122,6 +159,20 @@ public abstract class Prop
 			removeOther=true;
 		}
 		
+		public Link newLinkSameType(Thing thingIn)
+		{
+			try
+			{
+				return this.getClass().getDeclaredConstructor(Thing.class).newInstance(thingIn);
+			}
+			catch(Exception e)
+			{
+				WidapMind.errorMsg("exception in Link.newLinkSameType(): "+e.getMessage());
+				e.printStackTrace();
+				return this;
+			}
+		}
+		
 		public final void removedFromThing(Thing thing)
 		{
 			if (removeOther)
@@ -133,16 +184,7 @@ public abstract class Prop
 		
 		public Prop copy()
 		{
-			try
-			{
-				return this.getClass().getDeclaredConstructor(Thing.class).newInstance(other);
-			}
-			catch(Exception e)
-			{
-				WidapMind.errorMsg("exception in Link.copy: "+e.getMessage());
-				e.printStackTrace();
-				return this;
-			}
+			return newLinkSameType(other);
 		}
 	}
 	
@@ -203,7 +245,7 @@ public abstract class Prop
 		Abstract(){}
 		String id() {return "abstract";}
 		String str() {return "yes";}
-		void remove(Thing thing) {thing.isAbstract=false;}
+		public void removedFromThing(Thing thing) {thing.isAbstract=false;}
 	}
 	
 	static class Color extends Prop

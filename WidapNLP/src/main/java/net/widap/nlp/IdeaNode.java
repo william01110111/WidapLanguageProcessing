@@ -125,26 +125,32 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 	{
 		int ideaNum;
 		
+		if (WidapMind.extraMessages)
+			WidapMind.message("mergeAll() started");
+		
 		do
 		{
-			if (WidapMind.stepThroughMerges)
-				WidapMind.message(toStringVisual2());
-			
 			ideaNum=ideas.size();
 			
 			for (int j=0; j<ideaNum; j++)
 			{
-				if (ideaNum>1000)
+				if (ideaNum>20)
 				{
 					WidapMind.errorMsg("merge loop timed out, indicating either an endless loop or just a hella complicated sentence");
 					return;
 				}
+				
+				if (WidapMind.extraMessages)
+					WidapMind.message("calling Idea.merge()");
 				
 				Idea idea=ideas.get(j);
 				idea.merge();
 			}
 		}
 		while (ideas.size()>ideaNum); //loop until things stop happening
+		
+		if (WidapMind.extraMessages)
+			WidapMind.message("mergeAll() finished");
 	}
 	
 	//has issues

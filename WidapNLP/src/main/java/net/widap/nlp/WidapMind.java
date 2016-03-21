@@ -15,6 +15,7 @@ public class WidapMind
 	static final boolean lotsOfChecks=true; //if to run checks on many of the internal data structures
 	//turning off may speed things up considerably, and it won't cause any new errors, just fail the catch any that may arise
 	static final boolean stepThroughMerges=true; //if to display the idea data structure at each stage of the merging process
+	static final boolean extraMessages=true; //if true, lots od updates will be printed to track the creation, modification and removal of things
 	
 	private boolean quit=false;
 	
@@ -47,6 +48,12 @@ public class WidapMind
 		}
 		else if (things.size()==1)
 		{
+			if (WidapMind.extraMessages)
+				WidapMind.message(in+" was already known");
+			
+			//if (things.get(0)!=in)
+			//	in.removeAllProps();
+			
 			return things.get(0);
 		}
 		else //(things.size()==0)
@@ -54,23 +61,34 @@ public class WidapMind
 			in.nxtThing=thingStrt;
 			thingStrt=in;
 			
-			/*for (int i=0; i<in.props.size(); i++)
+			if (WidapMind.extraMessages)
+				WidapMind.message("adding "+in+"...");
+			
+			for (int i=0; i<in.props.size(); i++)
 			{
 				Prop prop=in.props.get(0);
 				
 				if (prop instanceof Prop.Link)
 				{
-					Thing other=addThing(((Prop.Type)prop).other);
+					Thing other=addThing(((Prop.Link)prop).other);
 					
-					if (other!=((Prop.Type)prop).other)
+					if (other!=((Prop.Link)prop).other)
 					{
-						in.removeProp(prop);
+						in.removeProp(i);
 						i--;
-						
-						in.addProp(new Prop.Type(other));
+						in.addProp(((Prop.Link)prop).newLinkSameType(other));
 					}
 				}
-			}*/
+				else if (prop instanceof Prop.LinkTemp)
+				{
+					in.removeProp(i);
+					i--;
+					in.addProp(((Prop.LinkTemp)prop).getRealLink());
+				}
+			}
+			
+			if (WidapMind.lotsOfChecks)
+				in.check();
 			
 			return in;
 		}

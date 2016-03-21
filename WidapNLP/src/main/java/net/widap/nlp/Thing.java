@@ -50,6 +50,11 @@ public class Thing
 	
 	public void addProp(Prop prop)
 	{
+		if (WidapMind.extraMessages)
+		{
+			WidapMind.message("adding ["+prop+"] to "+this);
+		}
+		
 		if (prop instanceof Prop.Abstract)
 		{
 			if (isAbstract)
@@ -61,7 +66,21 @@ public class Thing
 			isAbstract=true;
 		}
 		
-		props.add(prop.getPropToAdd(this));
+		prop=prop.getPropToAdd(this);
+		props.add(prop);
+		
+		for (int i=0; i<props.size()-1; i++)
+		{
+			Prop prop0=props.get(i);
+			
+			if (prop0.equals(prop))
+			{
+				removeProp(props.size()-1);
+				if (WidapMind.lotsOfChecks)
+					WidapMind.message("["+prop+"] was already in "+this.getName());
+				break;
+			}
+		}
 	}
 	
 	public void addProps(ArrayList<Prop> props)
@@ -70,10 +89,36 @@ public class Thing
 			addProp(prop);
 	}
 	
+	//removes only the last instance
 	public void removeProp(Prop prop)
 	{
-		props.remove(prop);
+		for (int i=props.size()-1; i>=0; i--)
+		{
+			if (props.get(i)==prop)
+			{
+				removeProp(i);
+				return;
+			}
+		}
+		
+		if (WidapMind.lotsOfChecks)
+		{
+			WidapMind.errorMsg("could not find ["+prop+"] in "+this+" (keep in mind it has to be the same instance, not just equivalent)");
+			new Exception().printStackTrace();
+		}
+	}
+	
+	public void removeProp(int i)
+	{
+		Prop prop=props.get(i);
+		props.remove(i);
 		prop.removedFromThing(this);
+	}
+	
+	public void removeAllProps()
+	{
+		while (props.size()>0)
+			removeProp(props.size()-1);
 	}
 	
 	//returns the string of the first name type property
@@ -115,12 +160,19 @@ public class Thing
 	
 	public Thing getType()
 	{
-		Prop prop=getProp(Prop.Type.class);
+		for (Prop prop : props)
+		{
+			if (prop instanceof Prop.Type)
+			{
+				return ((Prop.Type)prop).other;
+			}
+			else if (prop instanceof Prop.LinkTemp && ((Prop.LinkTemp)prop).linkClass==Prop.Type.class)
+			{
+				return ((Prop.LinkTemp)prop).other;
+			}
+		}
 		
-		if (prop==null)
-			return null;
-		else
-			return ((Prop.Type)prop).other;
+		return null;
 	}
 	
 	public ArrayList<Thing> getTypes()
@@ -132,6 +184,10 @@ public class Thing
 			if (prop instanceof Prop.Type)
 			{
 				things.add(((Prop.Type)prop).other);
+			}
+			else if (prop instanceof Prop.LinkTemp && ((Prop.LinkTemp)prop).linkClass==Prop.Type.class)
+			{
+				things.add(((Prop.LinkTemp)prop).other);
 			}
 		}
 		
@@ -223,6 +279,29 @@ public class Thing
 	public boolean equals(Thing other)
 	{
 		return this==other || (other.props.size()==props.size() && contains(other));
+	}
+	
+	public void check()
+	{
+		boolean isAbstractBool=false;
+		
+		for (Prop prop : props)
+		{
+			if (prop instanceof Prop.Abstract)
+			{
+				if (isAbstractBool)
+					WidapMind.errorMsg("more then one Abstract property in "+this);
+				else
+					isAbstractBool=true;
+			}
+			
+			prop.check();
+		}
+		
+		if (isAbstractBool && !isAbstract)
+			WidapMind.errorMsg("isAbstract in "+this+" was set to false");
+		else if (!isAbstractBool && isAbstract)
+			WidapMind.errorMsg("isAbstract in "+this+" was set to true");
 	}
 	
 	public String toString()

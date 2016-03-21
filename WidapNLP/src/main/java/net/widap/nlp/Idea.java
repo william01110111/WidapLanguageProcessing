@@ -9,9 +9,10 @@ import java.util.ArrayList;
 //an idea that can be anything from an unrecognised word to a thing with attributes and actions
 public class Idea
 {
-	WidapMind mind;
+	private WidapMind mind;
 	
-	IdeaNode next, prev;
+	public IdeaNode next, prev;
+	private int nextHgh, prevHgh; //the highest in next.next and prev.prev that have been attempted to merge with
 	
 	public String str;
 	public Word.Variant variant;
@@ -26,6 +27,7 @@ public class Idea
 		//	WidapMind.message("made new Idea");
 		
 		mind=m;
+		nextHgh=0; prevHgh=0;
 		variant=null;
 		props=new ArrayList<>();
 		plural=false;
@@ -98,16 +100,19 @@ public class Idea
 		props.addAll(inProps);
 	}
 	
-	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing inThing, WidapMind m)
+	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing thingIn, boolean inPl, WidapMind m)
 	{
 		this(n0, n1, inStr, m);
-		thing=inThing.copy();
+		thing=thingIn.copy();
+		plural=inPl;
 	}
 	
-	public Idea(IdeaNode n0, IdeaNode n1, String inStr, Thing inThing, boolean inPl, WidapMind m)
+	public Idea(IdeaNode n0, IdeaNode n1, String inStr, ArrayList<Prop> propsIn, Thing thingIn, boolean inPl, WidapMind m)
 	{
-		this(n0, n1, inStr, inThing, m);
+		this(n0, n1, inStr, m);
+		thing=thingIn.copy();
 		plural=inPl;
+		props.addAll(propsIn);
 	}
 	
 	public Idea(IdeaData data, WidapMind m)
@@ -238,45 +243,24 @@ public class Idea
 		
 		getThingsFwd(ideas);
 		getPropsFwd(ideas);
+		mergeConjunctions(ideas);
 		
 		for (IdeaData data : ideas)
+		{
+			if (WidapMind.stepThroughMerges)
+				WidapMind.message(prev.toStringVisual2());
+			
 			new Idea(data, mind).remove(true);
-		
-		if (thing!=null)
-		{
-			
-		}
-		else if (props.size()!=0)
-		{
-			
-		}
-		else if (variant!=null)
-		{
-			/*if (Word.posMatches(Word.POS.ADJ, variant.pos))
-			{
-				ArrayList<IdeaData> ideas=new ArrayList<>();
-				
-				getThingsFwd(ideas);
-				
-				for (IdeaData data : ideas)
-					new Idea(data, mind).remove(true);
-			}*/
-		}
-		else
-		{
-			switch (str)
-			{
-			}
 		}
 	}
 	
 	private void getThingsFwd(ArrayList<IdeaData> data)
 	{
-		if (thing!=null)
+		if (thing!=null && props.size()==0)
 		{
 			data.add(new IdeaData(prev, next, str, thing, plural));
 		}
-		else if (props.size()>0)
+		else if (props.size()>0 && thing==null)
 		{
 			int start=data.size();
 			
@@ -292,7 +276,7 @@ public class Idea
 				if (elem.thing!=null && elem.thing.isAbstract)
 				{
 					Thing thing=new Thing();
-					thing.addProp(new Prop.Type(elem.thing));
+					thing.addProp(new Prop.LinkTemp(Prop.Type.class, elem.thing));
 					
 					for (Prop prop : props)
 						thing.addProp(prop);
@@ -335,7 +319,7 @@ public class Idea
 							if (elem.thing.isAbstract)
 							{
 								Thing thing=new Thing();
-								thing.addProp(new Prop.Type(elem.thing));
+								thing.addProp(new Prop.LinkTemp(Prop.Type.class, elem.thing));
 								elem.thing=thing;
 							}
 							
@@ -344,7 +328,7 @@ public class Idea
 							if (type==null)
 								break;
 							
-							type.addProp(new Prop.DefaultInstance(elem.thing));
+							elem.thing.addProp(new Prop.LinkTemp(Prop.DefaultOfType.class, type));
 							
 							elem.str=str+" "+elem.str;
 							elem.prev=prev;
@@ -364,7 +348,7 @@ public class Idea
 	
 	private void getPropsFwd(ArrayList<IdeaData> data)
 	{
-		if (props.size()>0)
+		if (props.size()>0 && thing==null)
 		{
 			int start=data.size(); //stops the method from interfering with elements that do not go through it
 			
@@ -406,10 +390,11 @@ public class Idea
 						{
 							if (idea1.thing==null && idea1.props.size()>0)
 							{
-								ArrayList<Prop> allProps=new ArrayList<>();
-								allProps.addAll(idea0.props);
-								allProps.addAll(idea1.props);
-								new IdeaData(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, allProps);
+								IdeaData ideaData=new IdeaData(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str);
+								ideaData.props.addAll(idea0.props);
+								ideaData.props.addAll(idea1.props);
+								data.add(ideaData);
+								
 							}
 						}
 					}
@@ -425,9 +410,7 @@ public class Idea
 						{
 							if (idea1.props.size()>0)
 							{
-								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, false, mind);
-								idea.props.addAll(idea1.props);
-								idea.remove(true);
+								data.add(new IdeaData(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea1.props, idea0.thing, false));
 							}
 						}
 					}
@@ -437,15 +420,13 @@ public class Idea
 			case "are":
 				for (Idea idea0 : prev.prev)
 				{
-					if (idea0.thing!=null && idea0.plural)
+					if (idea0.thing!=null && idea0.plural && idea0.props.size()==0)
 					{
 						for (Idea idea1 : next.next)
 						{
-							if (idea1.props.size()>0)
+							if (idea1.props.size()>0 && idea1.thing==null)
 							{
-								Idea idea=new Idea(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea0.thing, true, mind);
-								idea.props.addAll(idea1.props);
-								idea.remove(true);
+								data.add(new IdeaData(idea0.prev, idea1.next, idea0.str+" "+str+" "+idea1.str, idea1.props, idea0.thing, true));
 							}
 						}
 					}
@@ -458,6 +439,9 @@ public class Idea
 	//searches to see id this Idea has a duplicate in the same place in the structure
 	private boolean isDuplicate()
 	{
+		if (WidapMind.extraMessages)
+			WidapMind.message("isDuplicate called for "+this);
+		
 		for (Idea other : prev.next)
 		{
 			if (other!=this && next==other.next && equals(other))
@@ -546,6 +530,12 @@ public class Idea
 		
 		//if (WidapMind.lotsOfMsgs)
 		//	WidapMind.message(toString()+" removed from data structure");
+		
+		if (WidapMind.extraMessages)
+			WidapMind.message("removing "+this);
+		
+		if (thing!=null)
+			thing.removeAllProps();
 		
 		next.ideas.remove(this);
 		
@@ -644,12 +634,6 @@ public class Idea
 			variant=variantIn;
 		}
 		
-		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn)
-		{
-			this(prevIn, nextIn, strIn);
-			thing=thingIn.copy();
-		}
-		
 		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Thing thingIn, boolean plIn)
 		{
 			this(prevIn, nextIn, strIn);
@@ -661,6 +645,14 @@ public class Idea
 		{
 			this(prevIn, nextIn, strIn);
 			props.addAll(propsIn);
+		}
+		
+		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, ArrayList<Prop> propsIn, Thing thingIn, boolean plIn)
+		{
+			this(prevIn, nextIn, strIn);
+			props.addAll(propsIn);
+			thing=thingIn.copy();
+			plural=plIn;
 		}
 		
 		IdeaData(IdeaNode prevIn, IdeaNode nextIn, String strIn, Prop prop)
