@@ -201,7 +201,7 @@ public class Idea
 				hasAdj=true;
 		
 		if (hasAdj || variants.size()==0)
-			new Idea(prev, next, str, new Prop.Attrib(strSin), mind).remove(true);
+			new Idea(prev, next, str, new Prop.StrProp(strSin), mind).remove(true);
 		
 		boolean hasNoun=false;
 		for (Word.Variant v : variants)
@@ -211,7 +211,7 @@ public class Idea
 		if (hasNoun)
 		{
 			Thing thing=new Thing(strSin);
-			thing.addProp(new Prop.Abstract());
+			thing.addProp(new Prop.Attrib(Attrib.ABSTRACT));
 			new Idea(prev, next, str, thing, false, mind).remove(true);
 		}
 		
@@ -226,7 +226,7 @@ public class Idea
 		if (hasPlNoun)
 		{
 			Thing thing=new Thing(strSin);
-			thing.addProp(new Prop.Abstract());
+			thing.addProp(new Prop.Attrib(Attrib.ABSTRACT));
 			new Idea(prev, next, str, thing, true, mind).remove(true);
 		}
 		
@@ -271,7 +271,7 @@ public class Idea
 			{
 				IdeaData elem=data.get(i);
 				
-				if (elem.thing!=null && elem.thing.isAbstract)
+				if (elem.thing!=null && elem.thing.is(Attrib.ABSTRACT))
 				{
 					Thing thing=new Thing();
 					thing.addProp(new Prop.LinkTemp(Prop.Type.class, elem.thing));
@@ -311,7 +311,7 @@ public class Idea
 						
 						if (elem.thing!=null)
 						{
-							if (elem.thing.isAbstract)
+							if (elem.thing.is(Attrib.ABSTRACT))
 							{
 								Thing thing=new Thing();
 								thing.addProp(new Prop.LinkTemp(Prop.Type.class, elem.thing));
@@ -403,7 +403,7 @@ public class Idea
 			case "is":
 				for (Idea idea0 : prev.prev)
 				{
-					if (idea0.thing!=null && !idea0.plural && !idea0.thing.isAbstract)
+					if (idea0.thing!=null && !idea0.plural && !idea0.thing.is(Attrib.ABSTRACT))
 					{
 						for (Idea idea1 : next.next)
 						{
@@ -472,7 +472,7 @@ public class Idea
 		
 		if (thing!=o.thing)
 		{
-			if (thing==null || o.thing==null || !thing.equals(o.thing))
+			if (thing==null || o.thing==null || !thing.equals(o.thing, false))
 				return false;
 		}
 		
@@ -491,7 +491,7 @@ public class Idea
 		if (variant!=o.variant)
 			return false;
 		
-		if (thing!=null && o.thing!=null && !thing.contains(o.thing))
+		if (thing!=null && o.thing!=null && !thing.contains(o.thing, false))
 			return false;
 		
 		if (thing==null && o.thing!=null)

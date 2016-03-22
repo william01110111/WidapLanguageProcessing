@@ -442,7 +442,7 @@ public class TextParser
 						{
 							strs.add("they are types of "+dict.switchPOS(prop.str(), Word.POS.NOUN_PL));
 						}
-						else if (prop.getClass().equals(Prop.Attrib.class))
+						else if (prop.getClass().equals(Prop.StrProp.class))
 						{
 							strs.add("they are "+prop.str());
 						}

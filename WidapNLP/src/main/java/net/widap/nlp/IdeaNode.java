@@ -598,8 +598,10 @@ public class IdeaNode //nodes connect ideas in a complex data structure
 							s="┏";
 						else if (s1.startsWith(" "))
 							s="┓";
-						else
+						else if (i<node.hgh)
 							s="┳";
+						else
+							s="━";
 					}
 					else if (i==node.hgh)
 					{

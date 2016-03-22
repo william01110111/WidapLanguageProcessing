@@ -6,7 +6,7 @@ public class Thing
 {
 	//do not add or remove from this list manually, use addProp and removeProp
 	public ArrayList<Prop> props;
-	public boolean isAbstract;
+	private boolean boolProps[];
 	public Thing nxtThing=null;
 	
 	public static final String defaultName="[unnamed thing]";
@@ -14,7 +14,7 @@ public class Thing
 	Thing()
 	{
 		props=new ArrayList<>();
-		isAbstract=false;
+		boolProps=new boolean[Attrib.values().length];
 	}
 	
 	Thing(String name)
@@ -55,15 +55,15 @@ public class Thing
 			WidapMind.message("adding ["+prop+"] to "+this);
 		}
 		
-		if (prop instanceof Prop.Abstract)
+		if (prop instanceof Prop.Attrib)
 		{
-			if (isAbstract)
+			if (boolProps[((Prop.Attrib)prop).val.ordinal()])
 			{
-				WidapMind.errorMsg("added abstract prop twice to "+toString());
+				WidapMind.errorMsg("tried to add "+((Prop.Attrib)prop).val.name()+" twice to "+toString());
 				return;
 			}
 			
-			isAbstract=true;
+			boolProps[((Prop.Attrib)prop).val.ordinal()]=true;
 		}
 		
 		prop=prop.getPropToAdd(this);
@@ -156,6 +156,11 @@ public class Thing
 		}
 		
 		return false;
+	}
+	
+	public boolean is(Attrib in)
+	{
+		return boolProps[in.ordinal()];
 	}
 	
 	public Thing getType()
@@ -265,23 +270,23 @@ public class Thing
 	}
 	
 	//returns if the properties of the other thing are a subset of this thing's properties
-	public boolean contains(Thing other)
+	public boolean contains(Thing other, boolean ignoreLinks)
 	{
-		for (Prop otherProp : other.props)
+		if (ignoreLinks)
 		{
-			if (!hasProp(otherProp))
-				return false;
+			for (Prop otherProp : other.props)
+			{
+				if (!(otherProp instanceof Prop.Link) && !(otherProp instanceof Prop.LinkTemp) && !hasProp(otherProp))
+					return false;
+			}
 		}
-		
-		return true;
-	}
-	
-	public boolean containsIgnoreLinks(Thing other)
-	{
-		for (Prop otherProp : other.props)
+		else
 		{
-			if (!(otherProp instanceof Prop.Link) && !(otherProp instanceof Prop.LinkTemp) && !hasProp(otherProp))
-				return false;
+			for (Prop otherProp : other.props)
+			{
+				if (!hasProp(otherProp))
+					return false;
+			}
 		}
 		
 		return true;
@@ -289,35 +294,22 @@ public class Thing
 	
 	public boolean equals(Thing other)
 	{
-		return this==other || (other.props.size()==props.size() && contains(other));
+		WidapMind.errorMsg("needed to call with ignoreLinks variable");
+		new Exception().printStackTrace();
+		return false;
 	}
 	
-	public boolean equalsIgnoreLinks(Thing other)
+	public boolean equals(Thing other, boolean ignoreLinks)
 	{
-		return this==other || (other.props.size()==props.size() && containsIgnoreLinks(other));
+		return this==other || (other.props.size()==props.size() && contains(other, ignoreLinks));
 	}
 	
 	public void check()
 	{
-		boolean isAbstractBool=false;
-		
 		for (Prop prop : props)
 		{
-			if (prop instanceof Prop.Abstract)
-			{
-				if (isAbstractBool)
-					WidapMind.errorMsg("more then one Abstract property in "+this);
-				else
-					isAbstractBool=true;
-			}
-			
 			prop.check();
 		}
-		
-		if (isAbstractBool && !isAbstract)
-			WidapMind.errorMsg("isAbstract in "+this+" was set to false");
-		else if (!isAbstractBool && isAbstract)
-			WidapMind.errorMsg("isAbstract in "+this+" was set to true");
 	}
 	
 	public String toString()

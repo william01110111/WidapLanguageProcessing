@@ -1,8 +1,9 @@
 package net.widap.nlp;
 
-enum PropBool
+enum Attrib
 {
 	ABSTRACT,
+	PLURAL,
 	EVENT
 }
 
@@ -35,7 +36,7 @@ public abstract class Prop
 	
 	public boolean equals(Prop other)
 	{
-		return getClass().equals(other.getClass()) && id().equals(other.id()) && str().equals(other.str());
+		return getClass()==other.getClass() && id().equals(other.id()) && str().equals(other.str());
 	}
 	
 	//returns a copy of this property, it if fine to just return this (as is default) if that won't mess anything up
@@ -45,17 +46,17 @@ public abstract class Prop
 	public void check() {}
 	
 	//a general attribute that doesn't fit into any specific type of property, or for an unknown property type
-	static class PropStr extends Prop
+	static class StrProp extends Prop
 	{
 		private final String idStr, strStr;
 		
-		PropStr(String id, String str)
+		StrProp(String id, String str)
 		{
 			idStr=id;
 			strStr=str;
 		}
 		
-		PropStr(String str)
+		StrProp(String str)
 		{
 			idStr="property";
 			strStr=str;
@@ -67,18 +68,18 @@ public abstract class Prop
 	}
 	
 	//give a property a single boopean value
-	static class PropBool
+	static class Attrib extends Prop
 	{
-		public final PropBool val;
+		public final net.widap.nlp.Attrib val;
 		
-		PropBool(PropBool valIn)
+		Attrib(net.widap.nlp.Attrib valIn)
 		{
 			val=valIn;
 		}
 		
 		String id() {return "bool property";}
 
-		String str() {return val == null ?"[null enum]": val.toString().toLowerCase();}
+		String str() {return val == null ?"[null enum]": val.name().toLowerCase();}
 		
 		public String toString() {return str();}
 	}
@@ -111,7 +112,7 @@ public abstract class Prop
 		
 		public boolean equals(Prop prop)
 		{
-			return (getClass()==prop.getClass() && linkClass==((LinkTemp)prop).linkClass && other.equalsIgnoreLinks(((LinkTemp)prop).other)) || ((prop instanceof Link) && prop.equals(this));
+			return (getClass()==prop.getClass() && linkClass==((LinkTemp)prop).linkClass && other.equals(((LinkTemp)prop).other, true)) || ((prop instanceof Link) && prop.equals(this));
 		}
 		
 		public Link getRealLink()
@@ -154,7 +155,7 @@ public abstract class Prop
 		//the default Prop equals method may say they are equal when they are not, but I have had endless problems with this because it is recursive (by calling Thing.equals)
 		public boolean equals(Prop prop)
 		{
-			return (getClass()==prop.getClass() && other.equalsIgnoreLinks(((Link)prop).other) && id().equals(prop.id())) || ((prop instanceof LinkTemp) && getClass()==((LinkTemp)prop).linkClass && other.equalsIgnoreLinks(((LinkTemp)prop).other));
+			return (getClass()==prop.getClass() && other.equals(((Link)prop).other, true) && id().equals(prop.id())) || ((prop instanceof LinkTemp) && getClass()==((LinkTemp)prop).linkClass && other.equals(((LinkTemp)prop).other, true));
 		}
 		
 		public final Prop getPropToAdd(Thing thing)
