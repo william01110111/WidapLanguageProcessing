@@ -205,20 +205,19 @@ public class WordTree
 	//has several things to try, and always returns something, even if its just the original word
 	public String switchPOS(String input, Word.POS pos)
 	{
-		Word word=getWord(input, true);
-		ArrayList<Word.Variant> list;
+		ArrayList<Word.Variant> list=getVariants(input, true);
 		
-		//first we check if the dictionary has the variant we want. If it has multiple, we just return the first one
-		if (word!=null && (list=word.getVariants(pos)).size()>0)
-			return list.get(0).txt;
+		for (Word.Variant v : list)
+		{
+			if (v.pos==pos)
+				return v.txt;
+		}
 		
-		
-		else if (Word.posMatches(Word.POS.NOUN_PL, pos))
+		if (Word.posMatches(Word.POS.NOUN_PL, pos))
 		{
 			String out=makePlural(switchPOS(input, Word.POS.NOUN));
 			return out==null?input:out;
 		}
-		
 		else if (Word.posMatches(Word.POS.NOUN, pos))
 		{
 			String out=makeSingular(input);

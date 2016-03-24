@@ -146,7 +146,7 @@ public class WidapMind
 		
 		while (thing!=null)
 		{
-			if (thing.contains(in, true))
+			if (thing.contains(in, false))
 				list.add(thing);
 			
 			thing=thing.nxtThing;
