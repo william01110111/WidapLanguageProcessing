@@ -491,7 +491,7 @@ public class Idea
 		if (variant!=o.variant)
 			return false;
 		
-		if (thing!=null && o.thing!=null && !thing.contains(o.thing, false))
+		if (thing!=null && o.thing!=null && !thing.contains(o.thing, true))
 			return false;
 		
 		if (thing==null && o.thing!=null)

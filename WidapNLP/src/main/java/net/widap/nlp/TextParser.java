@@ -176,7 +176,10 @@ public class TextParser
 						return idea0;
 					}
 				}
-				
+			}
+			
+			for (Idea idea0 : ideas)
+			{
 				if (idea0.thing!=null)
 				{
 					WidapMind.errorMsg("was unable to determine the best idea, so choosing the first one that has a thing");
